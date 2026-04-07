@@ -112,8 +112,8 @@ func main() {
 		if waClient == nil {
 			return
 		}
-		msg := formatMorningMessage()
 		for tech, number := range cfg.Technicians {
+			msg := formatMorningMessage(tech)
 			waClient.SendMessage(number, msg)
 			srv.AddNotification("morning", tech, msg, true)
 		}
@@ -237,8 +237,8 @@ func formatNOKAlert(s *models.DailyStats) string {
 	return msg
 }
 
-func formatMorningMessage() string {
-	return "🌅 *Bonjour équipe !* 💪\n\nBonne journée ! N'oubliez pas de:\n✅ Scanner les équipements\n✅ Mettre à jour le tableau\n✅ Signaler tout problème\n\nAllez, on attaque ! 🔧"
+func formatMorningMessage(techName string) string {
+	return fmt.Sprintf("🌅 Bonjour %s !\n\nMerci de commencer votre intervention et d'arriver à l'heure chez le client.\nEn cas de problème, merci d'envoyer un message à votre supérieur.", techName)
 }
 
 func formatEODReport(s *models.DailyStats) string {
