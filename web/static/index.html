@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technosmart — Dashboard</title>
+    <meta name="description" content="Technosmart — Suivi des interventions fibre optique en temps réel">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="#" class="logo-link" onclick="switchView('dashboard');return false">
+                <img src="/logo.png" alt="Technosmart" class="logo-img">
+            </a>
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <span class="nav-label">Général</span>
+                <a href="#" class="nav-item active" data-view="dashboard" id="nav-dashboard">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="interventions" id="nav-interventions">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    <span>Interventions</span>
+                </a>
+                <a href="#" class="nav-item" data-view="technicians" id="nav-technicians">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span>Techniciens</span>
+                </a>
+                <a href="#" class="nav-item" data-view="gantt" id="nav-gantt">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span>Planning</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <span class="nav-label">Analyse</span>
+                <a href="#" class="nav-item" data-view="failures" id="nav-failures">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <span>Échecs NOK</span>
+                    <span class="nav-badge" id="nokBadge">0</span>
+                </a>
+                <a href="#" class="nav-item" data-view="notifications" id="nav-notifications">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span>Notifications</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <span class="nav-label">Données</span>
+                <a href="#" class="nav-item" data-view="upload" id="nav-upload">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span>Import</span>
+                </a>
+                <a href="#" class="nav-item" data-view="settings" id="nav-settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span>Paramètres</span>
+                </a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="footer-row">
+                <div class="ntp-clock" id="ntpClock">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <div>
+                        <div class="ntp-time" id="ntpTime">--:--:--</div>
+                        <div class="ntp-date" id="ntpDate">France</div>
+                    </div>
+                </div>
+                <button class="theme-toggle-mini" id="themeToggle" title="Changer le thème" onclick="toggleTheme()">
+                    <svg class="theme-icon sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="theme-icon moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Sidebar overlay (mobile backdrop) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Mobile header -->
+    <header class="mobile-header" id="mobileHeader">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
+        <img src="/logo.png" alt="Technosmart" class="mobile-logo-img">
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="mainContent">
+        <!-- Dashboard View -->
+        <section class="view active" id="view-dashboard">
+            <div class="view-header">
+                <div>
+                    <h1 id="dashboardTitle">Dashboard</h1>
+                    <p class="view-subtitle" id="dashboardSubtitle">Vue d'ensemble des interventions du jour</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline file-selector-btn" id="fileSelectorBtn" onclick="openFilePanel()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            <span id="fileTagName">Aucun fichier</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="refreshData()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                        Actualiser
+                    </button>
+                </div>
+            </div>
+
+            <!-- Metric Cards Row -->
+            <div class="metrics-grid" id="metricsGrid">
+                <div class="metric-card" id="metric-total">
+                    <div class="metric-header">
+                        <span class="metric-label">Total interventions</span>
+                        <div class="metric-icon blue">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        </div>
+                    </div>
+                    <div class="metric-value" id="metricTotal">—</div>
+                    <div class="metric-footer">
+                        <span class="metric-sub">PDC: <strong id="metricPDC">—</strong></span>
+                        <span class="metric-sub">En cours: <strong id="metricInProgress">—</strong></span>
+                    </div>
+                </div>
+                <div class="metric-card" id="metric-ok">
+                    <div class="metric-header">
+                        <span class="metric-label">Clôturées OK</span>
+                        <div class="metric-icon green">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
+                    <div class="metric-value green" id="metricOK">—</div>
+                    <div class="metric-footer">
+                        <div class="metric-bar"><div class="metric-bar-fill green" id="barOK" style="width:0%"></div></div>
+                    </div>
+                </div>
+                <div class="metric-card" id="metric-nok">
+                    <div class="metric-header">
+                        <span class="metric-label">Clôturées NOK</span>
+                        <div class="metric-icon red">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </div>
+                    </div>
+                    <div class="metric-value red" id="metricNOK">—</div>
+                    <div class="metric-footer">
+                        <div class="metric-bar"><div class="metric-bar-fill red" id="barNOK" style="width:0%"></div></div>
+                    </div>
+                </div>
+                <div class="metric-card" id="metric-rate">
+                    <div class="metric-header">
+                        <span class="metric-label">Taux de réussite</span>
+                        <div class="metric-icon purple">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                        </div>
+                    </div>
+                    <div class="metric-value" id="metricRate">—</div>
+                    <div class="metric-footer">
+                        <span class="metric-change" id="metricRateLabel">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-grid">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3>Répartition OK / NOK</h3>
+                        <div class="card-tabs">
+                            <button class="tab active" data-chart="global">Global</button>
+                            <button class="tab" data-chart="racc">RACC</button>
+                            <button class="tab" data-chart="sav">SAV</button>
+                        </div>
+                    </div>
+                    <div class="card-body chart-body">
+                        <canvas id="donutChart" width="220" height="220"></canvas>
+                        <div class="chart-legend" id="chartLegend"></div>
+                    </div>
+                </div>
+
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3>Performance techniciens</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="tech-bars" id="techBars">
+                            <div class="empty-state small">Aucune donnée</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3>Répartition</h3>
+                        <div class="card-tabs">
+                            <button class="tab active" data-breakdown="dept">Départements</button>
+                            <button class="tab" data-breakdown="zone">Zones</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="breakdown-list" id="breakdownList">
+                            <div class="empty-state small">Aucune donnée</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NOK Alerts Row -->
+            <div class="card" id="nokAlertCard" style="display:none;">
+                <div class="card-header red-accent">
+                    <h3>🚨 Opérations NOK</h3>
+                    <span class="badge badge-red" id="nokAlertCount">0</span>
+                </div>
+                <div class="card-body no-pad">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="nokTable">
+                            <thead>
+                                <tr>
+                                    <th>Technicien</th>
+                                    <th>Type</th>
+                                    <th>Jeton</th>
+                                    <th>Dépt.</th>
+                                    <th>Durée</th>
+                                    <th>Raison</th>
+                                    <th>Catégorie</th>
+                                </tr>
+                            </thead>
+                            <tbody id="nokTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interventions View -->
+        <section class="view" id="view-interventions">
+            <div class="view-header">
+                <div>
+                    <h1>Interventions</h1>
+                    <p class="view-subtitle">Tableau récapitulatif de toutes les interventions</p>
+                </div>
+                <div class="header-actions">
+                    <div class="search-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" placeholder="Rechercher..." id="interventionSearch">
+                    </div>
+                    <select class="filter-select" id="stateFilter">
+                        <option value="">Tous les états</option>
+                        <option value="OK">OK</option>
+                        <option value="NOK">NOK</option>
+                    </select>
+                    <select class="filter-select" id="typeFilter">
+                        <option value="">Tous les types</option>
+                        <option value="RACC">RACC</option>
+                        <option value="SAV">SAV</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body no-pad">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="interventionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Jeton</th>
+                                    <th>Tech</th>
+                                    <th>Type</th>
+                                    <th>État</th>
+                                    <th>Début</th>
+                                    <th>Fin</th>
+                                    <th>Durée</th>
+                                    <th>Dépt.</th>
+                                    <th>Zone</th>
+                                    <th>Retard</th>
+                                    <th>Code d'échec</th>
+                                </tr>
+                            </thead>
+                            <tbody id="interventionsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span id="interventionCount">0 interventions</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technicians View -->
+        <section class="view" id="view-technicians">
+            <div class="view-header">
+                <div>
+                    <h1>Techniciens</h1>
+                    <p class="view-subtitle">Performance individuelle</p>
+                </div>
+                <div class="header-actions">
+                    <select class="filter-select" id="techSort">
+                        <option value="nok">Trier par NOK (desc)</option>
+                        <option value="ok">Trier par OK (desc)</option>
+                        <option value="rate">Trier par taux (asc)</option>
+                        <option value="name">Trier par nom</option>
+                    </select>
+                </div>
+            </div>
+            <div class="tech-grid" id="techGrid">
+                <div class="empty-state">Aucune donnée</div>
+            </div>
+        </section>
+
+        <!-- GANTT View -->
+        <section class="view" id="view-gantt">
+            <div class="view-header">
+                <div>
+                    <h1>Planning GANTT</h1>
+                    <p class="view-subtitle">Vue chronologique des créneaux par technicien</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body no-pad">
+                    <div class="table-wrapper">
+                        <table class="data-table gantt-table" id="ganttTable">
+                            <thead>
+                                <tr id="ganttHeader"></tr>
+                            </thead>
+                            <tbody id="ganttBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Failures View -->
+        <section class="view" id="view-failures">
+            <div class="view-header">
+                <div>
+                    <h1>Analyse des échecs</h1>
+                    <p class="view-subtitle">Détails et catégories des interventions NOK</p>
+                </div>
+            </div>
+            <div class="failure-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Par catégorie d'échec</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="failure-bars" id="failureByCat"></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Par type d'intervention</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="failure-bars" id="failureByType"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header red-accent">
+                    <h3>Toutes les interventions NOK</h3>
+                </div>
+                <div class="card-body no-pad">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="failureTable">
+                            <thead>
+                                <tr>
+                                    <th>Technicien</th>
+                                    <th>Type</th>
+                                    <th>Réf.</th>
+                                    <th>PM</th>
+                                    <th>Dépt.</th>
+                                    <th>Début</th>
+                                    <th>Fin</th>
+                                    <th>Durée</th>
+                                    <th>Raison</th>
+                                    <th>Catégorie</th>
+                                </tr>
+                            </thead>
+                            <tbody id="failureBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Notifications View -->
+        <section class="view" id="view-notifications">
+            <div class="view-header">
+                <div>
+                    <h1>Notifications</h1>
+                    <p class="view-subtitle">Historique des messages envoyés</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body no-pad">
+                    <div class="notif-list" id="notifList">
+                        <div class="empty-state">Aucune notification</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload View -->
+        <section class="view" id="view-upload">
+            <div class="view-header">
+                <div>
+                    <h1>Importer un fichier</h1>
+                    <p class="view-subtitle">Déposez un fichier Excel (.xlsx) pour l'analyser</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="upload-text">
+                            <p class="upload-main">Glissez-déposez votre fichier Excel ici</p>
+                            <p class="upload-sub">ou <label for="fileInput" class="upload-link">parcourir</label></p>
+                            <p class="upload-hint">.xlsx uniquement — max 32 Mo</p>
+                        </div>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+                        <div class="upload-progress" id="uploadProgress" style="display:none">
+                            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                            <span class="progress-text" id="progressText">Upload en cours...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings View -->
+        <section class="view" id="view-settings">
+            <div class="view-header">
+                <div>
+                    <h1>Paramètres</h1>
+                    <p class="view-subtitle">Configuration de l'application</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="saveSettings()" id="saveSettingsBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Sauvegarder
+                    </button>
+                </div>
+            </div>
+            <div class="settings-grid">
+                <div class="card">
+                    <div class="card-header"><h3>📱 Mon numéro WhatsApp</h3></div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Numéro principal (recevra les alertes et stats)</label>
+                            <input type="tel" id="settingsMyNumber" class="form-input" placeholder="+33612345678">
+                            <span class="form-hint">Format international: +33XXXXXXXXX</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>⚙️ Général</h3></div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Dossier surveillé</label>
+                            <input type="text" id="settingsWatchFolder" class="form-input" placeholder="/home/user/Downloads">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Heure message matinal</label>
+                                <input type="number" id="settingsHour" class="form-input" min="0" max="23">
+                            </div>
+                            <div class="form-group">
+                                <label>Intervalle stats (heures)</label>
+                                <input type="number" id="settingsInterval" class="form-input" min="1" max="12">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Heure rapport fin de journée</label>
+                                <input type="number" id="settingsEODHour" class="form-input" min="0" max="23" placeholder="17">
+                                <small class="form-hint">Envoie le rapport final + remerciements aux techniciens</small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="toggle-label">
+                                <span>WhatsApp activé</span>
+                                <input type="checkbox" id="settingsWhatsApp">
+                                <span class="toggle-switch"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🔗 Connexion WhatsApp</h3>
+                        <span class="wa-status" id="waStatusBadge">Déconnecté</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="waContent">
+                            <div class="wa-section" id="waQRSection">
+                                <p class="wa-hint">Scannez le QR code avec WhatsApp sur votre téléphone :<br>
+                                <em>WhatsApp → ⋮ → Appareils liés → Lier un appareil</em></p>
+                                <div class="wa-qr-container" id="waQRContainer">
+                                    <div class="wa-qr-placeholder" id="waQRPlaceholder">
+                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5">
+                                            <rect x="3" y="3" width="7" height="7"/>
+                                            <rect x="14" y="3" width="7" height="7"/>
+                                            <rect x="3" y="14" width="7" height="7"/>
+                                            <rect x="14" y="14" width="3" height="3"/>
+                                            <rect x="18" y="14" width="3" height="3"/>
+                                            <rect x="14" y="18" width="3" height="3"/>
+                                            <rect x="18" y="18" width="3" height="3"/>
+                                        </svg>
+                                        <span>Cliquez pour générer le QR code</span>
+                                    </div>
+                                    <img id="waQRImage" class="wa-qr-image" style="display:none" alt="WhatsApp QR Code">
+                                </div>
+                                <button class="btn btn-primary" onclick="requestWAQR()" id="waQRBtn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                        <path d="M1 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                    </svg>
+                                    Lier WhatsApp
+                                </button>
+                            </div>
+                            <div class="wa-section" id="waConnectedSection" style="display:none">
+                                <div class="wa-connected-info">
+                                    <div class="wa-connected-icon">✅</div>
+                                    <div>
+                                        <strong>WhatsApp connecté</strong>
+                                        <p id="waPhoneDisplay" class="wa-phone">+33...</p>
+                                    </div>
+                                </div>
+                                <div class="wa-actions">
+                                    <button class="btn btn-secondary" onclick="sendTestWA()">
+                                        📩 Envoyer un test
+                                    </button>
+                                    <button class="btn btn-danger" onclick="logoutWA()">
+                                        🔌 Déconnecter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technicians management card - full width -->
+            <div class="card" style="margin-top:var(--space-xl)">
+                <div class="card-header">
+                    <h3>👷 Techniciens</h3>
+                    <button class="btn btn-secondary" onclick="addTechRow()" id="addTechBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Ajouter
+                    </button>
+                </div>
+                <div class="card-body no-pad">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="techConfigTable">
+                            <thead>
+                                <tr>
+                                    <th style="width:40%">Nom du technicien</th>
+                                    <th style="width:35%">Numéro WhatsApp</th>
+                                    <th style="width:25%;text-align:center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="techConfigBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span id="techCount">0 techniciens</span>
+                    <span style="margin-left:auto;color:var(--text-tertiary);font-size:0.78rem">Modifiez les noms et numéros directement dans le tableau</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- File Panel (slide-out modal for many files) -->
+    <div class="file-panel-overlay" id="filePanelOverlay" onclick="closeFilePanel()"></div>
+    <div class="file-panel" id="filePanel">
+        <div class="file-panel-header">
+            <div class="file-panel-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>Fichiers Excel</span>
+                <span class="file-panel-count" id="filePanelCount">0</span>
+            </div>
+            <button class="file-panel-close" onclick="closeFilePanel()">&times;</button>
+        </div>
+        <div class="file-panel-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="filePanelSearch" placeholder="Rechercher un fichier..." oninput="filterFileList(this.value)">
+        </div>
+        <div class="file-panel-sort">
+            <button class="sort-btn active" data-sort="name" onclick="sortFileList('name', this)">Nom</button>
+            <button class="sort-btn" data-sort="date" onclick="sortFileList('date', this)">Date</button>
+            <button class="sort-btn" data-sort="size" onclick="sortFileList('size', this)">Taille</button>
+        </div>
+        <div class="file-panel-list" id="filePanelList">
+            <div class="empty-state small">Chargement...</div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
