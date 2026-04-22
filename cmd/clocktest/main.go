@@ -10,9 +10,12 @@ import (
 	"time"
 
 	"fiber-tracker/internal/config"
+	"fiber-tracker/internal/db"
 	"fiber-tracker/internal/excel"
 	"fiber-tracker/internal/models"
 	"fiber-tracker/internal/whatsapp"
+	
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -29,8 +32,17 @@ func main() {
 	fmt.Println("══════════════════════════════════════════")
 	fmt.Println()
 
+	// Load .env first
+	godotenv.Load("../../.env")
+	godotenv.Load(".env")
+
+	// Initialize DB first
+	if err := db.InitDB(); err != nil {
+		log.Fatalf("❌ Failed to init DB: %v", err)
+	}
+
 	// Load the LATEST config
-	cfg, err := config.Load(*configPath)
+	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("❌ Failed to load config: %v", err)
 	}

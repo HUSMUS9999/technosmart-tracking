@@ -22,6 +22,11 @@ type Technician struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type SystemConfig struct {
+	Key   string `gorm:"primaryKey" json:"key"`
+	Value string `gorm:"type:text" json:"value"`
+}
+
 func InitDB() error {
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" { dbHost = "localhost" }
@@ -45,9 +50,9 @@ func InitDB() error {
 	}
 
 	// Migrate the schema
-	err = database.AutoMigrate(&Technician{})
+	err = database.AutoMigrate(&Technician{}, &SystemConfig{})
 	if err != nil {
-		return fmt.Errorf("failed to migrate Technician schema: %w", err)
+		return fmt.Errorf("failed to migrate schema: %w", err)
 	}
 
 	DB = database

@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
+
 	"fiber-tracker/internal/auth"
 	"fiber-tracker/internal/config"
 	"fiber-tracker/internal/db"
@@ -34,13 +36,16 @@ func main() {
 	fmt.Println("  Moca Consult — Fiber Tracker")
 	fmt.Println("══════════════════════════════════════════")
 
-	// Load config
-	configPath := "config/config.json"
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		// Fallback to local config.json if config directory doesn't exist (e.g. outside docker)
-		configPath = "config.json"
+	// Load .env first if present to allow DB connection details to be read
+	godotenv.Load(".env")
+
+	// Initialize GORM Database
+	if err := db.InitDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	cfg, err := config.Load(configPath)
+
+	// Load config from Database
+	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
@@ -49,20 +54,6 @@ func main() {
 	// Ensure watch folder exists
 	if err := os.MkdirAll(cfg.WatchFolder, 0750); err != nil {
 		log.Fatalf("Cannot create watch folder: %v", err)
-	}
-
-	// Initialize GORM Database
-	if err := db.InitDB(); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
-	}
-
-	// Migrate technicians to DB if any exist in config.json
-	dbTechs := db.GetTechniciansMap()
-	if len(dbTechs) == 0 && len(cfg.Technicians) > 0 {
-		log.Printf("[db] Migrating %d technicians from config to DB", len(cfg.Technicians))
-		for name, phone := range cfg.Technicians {
-			db.EnsureTechnician(name, phone)
-		}
 	}
 	
 	// Ensure config.Technicians holds the exact true state from DB 

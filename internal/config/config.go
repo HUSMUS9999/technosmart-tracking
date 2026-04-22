@@ -8,6 +8,7 @@ import (
 	"sync"
 	
 	"github.com/joho/godotenv"
+	"fiber-tracker/internal/db"
 )
 
 // Config holds all application settings.
@@ -56,20 +57,26 @@ type Config struct {
 var (
 	current *Config
 	mu      sync.RWMutex
-	path    string
 )
 
-// Load reads config from disk.
-func Load(filepath string) (*Config, error) {
-	path = filepath
-	data, err := os.ReadFile(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("read config: %w", err)
-	}
-
+// Load reads config from database.
+func Load() (*Config, error) {
 	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("parse config: %w", err)
+	
+	// Read from DB
+	var setting db.SystemConfig
+	err := db.DB.Where("key = ?", "main_config").First(&setting).Error
+	if err == nil && setting.Value != "" {
+		if err := json.Unmarshal([]byte(setting.Value), &cfg); err != nil {
+			return nil, fmt.Errorf("parse db config: %w", err)
+		}
+	} else {
+		// Try to migrate from legacy config.json if present
+		if data, err := os.ReadFile("config/config.json"); err == nil {
+			json.Unmarshal(data, &cfg)
+		} else if data, err := os.ReadFile("config.json"); err == nil {
+			json.Unmarshal(data, &cfg)
+		}
 	}
 
 	// Always load .env file for secrets (ignores error if .env doesn't exist)
@@ -185,15 +192,21 @@ func Get() *Config {
 	return current
 }
 
-// Save writes the current config back to disk.
+// Save writes the current config back to database.
 func Save(cfg *Config) error {
 	mu.Lock()
 	current = cfg
 	mu.Unlock()
 
-	data, err := json.MarshalIndent(cfg, "", "    ")
+	data, err := json.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
 	}
-	return os.WriteFile(path, data, 0600)
+	
+	setting := db.SystemConfig{
+		Key:   "main_config",
+		Value: string(data),
+	}
+	
+	return db.DB.Save(&setting).Error
 }
