@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 )
 
 // ZitadelSessionResponse represents the Zitadel v2 Session API response.
