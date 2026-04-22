@@ -30,6 +30,14 @@ moca-tracker/
         └── app.js           # Logique frontend, graphiques SVG, requêtes `fetch`
 ```
 
+### Mises à jour récentes (Avril 2026)
+- **Architecture 100% Base de données** : Le fichier `config.json` (et son mécanisme de repli) a été définitivement supprimé de l'image Docker et du code source. Toute la configuration applicative est désormais gérée de façon centralisée via PostgreSQL.
+- **Sécurité renforcée (Hardening)** : 
+  - Restriction stricte du montage des volumes Docker au seul répertoire `watch_folder`.
+  - Durcissement de l'authentification : les cookies de session (`ft_session`, `ft_oauth_state`) requièrent désormais HTTPS (`Secure: true`).
+  - Rotation et nettoyage des secrets en clair dans les fichiers d'environnement (`ZITADEL_MASTER_KEY`, `ZITADEL_SERVICE_PAT`).
+
+
 ## Prérequis
 
 - Docker & Docker Compose

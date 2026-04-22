@@ -23,8 +23,6 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /app/fiber-tracker /app/fiber-tracker
-RUN mkdir -p /app/config
-COPY --from=builder /app/config.json /app/config/config.json
 
 EXPOSE 9510
 

@@ -40,7 +40,7 @@ func SetStateCookie(w http.ResponseWriter, state string) {
 		Path:     "/",
 		MaxAge:   300, // 5 minutes
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -65,7 +65,7 @@ func Middleware(store *Store, next http.Handler) http.Handler {
 				Path:     "/",
 				MaxAge:   -1,
 				HttpOnly: true,
-				Secure:   false,
+				Secure:   true,
 				SameSite: http.SameSiteLaxMode,
 			})
 			handleUnauthorized(w, r)
@@ -99,7 +99,7 @@ func SetSessionCookie(w http.ResponseWriter, token string) {
 		Path:     "/",
 		MaxAge:   7 * 24 * 3600, // 7 days
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -112,7 +112,7 @@ func ClearSessionCookie(w http.ResponseWriter) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	})
 }

@@ -70,13 +70,6 @@ func Load() (*Config, error) {
 		if err := json.Unmarshal([]byte(setting.Value), &cfg); err != nil {
 			return nil, fmt.Errorf("parse db config: %w", err)
 		}
-	} else {
-		// Try to migrate from legacy config.json if present
-		if data, err := os.ReadFile("config/config.json"); err == nil {
-			json.Unmarshal(data, &cfg)
-		} else if data, err := os.ReadFile("config.json"); err == nil {
-			json.Unmarshal(data, &cfg)
-		}
 	}
 
 	// Always load .env file for secrets (ignores error if .env doesn't exist)

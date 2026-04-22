@@ -53,8 +53,7 @@ services:
     ports:
       - "9510:9510"
     volumes:
-      - /home/hus/Downloads:/home/hus/Downloads
-      - app_config:/app/config
+      - /home/hus/Downloads/watch_folder:/home/hus/Downloads/watch_folder
     env_file:
       - .env
     environment:
@@ -83,4 +82,3 @@ services:
 
 volumes:
   pgdata:
-  app_config:
