@@ -1,41 +1,41 @@
 # Fiber Tracker
 
-Suivi des interventions techniques fibre optique avec tableau de bord web en temps réel, notifications WhatsApp automatisées, et authentification sécurisée via Zitadel (OIDC).
+Suivi des interventions techniques fibre optique avec tableau de bord web en temps réel, notifications WhatsApp automatisées, et authentification sécurisée via Zitadel (IAM).
 
 ## Architecture
 
-Application Go conteneurisée avec dashboard web embarqué, Zitadel pour l'authentification, et PostgreSQL pour la persistance :
+Application Go monolithique conteneurisée avec dashboard web embarqué (Vanilla JS), Zitadel pour l'authentification (via Headless API), et PostgreSQL pour la persistance (sessions whatsmeow) :
 
-```
+```text
 fiber-tracker/
-├── main.go                 # Point d'entrée + logique de planification
-├── config.json             # Configuration persistée (bind-mount Docker)
-├── docker-compose.yml      # Orchestration multi-services
+├── main.go                 # Point d'entrée + injection des dépendances
+├── docker-compose.yml      # Orchestration multi-services (App, DB, Zitadel)
 ├── Dockerfile              # Build multi-stage (Go → Alpine)
 ├── internal/
-│   ├── auth/               # Middleware JWT, sessions, RBAC
-│   ├── config/             # Chargement/sauvegarde config JSON
-│   ├── excel/              # Parsing Excel (.xlsx)
-│   ├── gdrive/             # Intégration Google Drive
-│   ├── models/             # Types de données (stats, notifications)
-│   ├── scheduler/          # Planification (cron)
-│   ├── smtp/               # Mailer SMTP + templates email dark-mode
-│   ├── watcher/            # Surveillance dossier (fsnotify)
-│   └── whatsapp/           # Client WhatsApp (go-whatsmeow)
+│   ├── auth/               # Middleware JWT, sessions Zitadel (Headless API), RBAC
+│   ├── config/             # Chargement/sauvegarde de la config JSON (Volume Docker)
+│   ├── excel/              # Parsing Excel (.xlsx) et calcul des statistiques
+│   ├── gdrive/             # Intégration Google Drive (OAuth2)
+│   ├── models/             # Types de données (stats, notifications, interventions)
+│   ├── scheduler/          # Planification des tâches en arrière-plan (cron)
+│   ├── smtp/               # Mailer SMTP + templates email dark-mode natifs
+│   ├── watcher/            # Surveillance dossier d'upload (fsnotify)
+│   └── whatsapp/           # Client WhatsApp Web (go-whatsmeow + PostgreSQL)
 └── web/
-    ├── server.go            # Serveur HTTP + API REST + auth middleware
+    ├── server.go            # Serveur HTTP `net/http` + API REST + Middlewares
     └── static/
-        ├── index.html       # Dashboard SPA
-        ├── login.html       # Page de connexion + reset password
-        ├── style.css        # Design system dark premium (CSS custom properties)
-        └── app.js           # Logique frontend + composants UI custom
+        ├── index.html       # Dashboard SPA (Single Page Application)
+        ├── login.html       # Page de connexion customisée
+        ├── style.css        # Design system dark premium (CSS variables, flex/grid)
+        └── app.js           # Logique frontend, graphiques SVG, requêtes `fetch`
 ```
 
 ## Prérequis
 
 - Docker & Docker Compose
+- Serveur Linux (VPS) pour le déploiement de production
 
-## Démarrage
+## Démarrage (Développement)
 
 ```bash
 docker compose up -d --build
@@ -43,156 +43,95 @@ docker compose up -d --build
 
 Le dashboard est accessible à **http://localhost:9510**.
 
-### Services
+### Services Docker
 
-| Service | Container | Port | Description |
-|---------|-----------|------|-------------|
-| **App** | `fiber_app` | `9510` | Backend Go + Dashboard |
-| **Database** | `fiber_db` | `5444` | PostgreSQL 16 |
-| **Auth** | `zitadel_app` | `8080` | Zitadel OIDC Provider |
+| Service | Container | Port Host | Description |
+|---------|-----------|-----------|-------------|
+| **App** | `fiber_app` | `9510` | Backend Go + Dashboard Frontend |
+| **Database** | `fiber_db` | `5444` | PostgreSQL 16 (Stockage sessions WhatsApp) |
+| **Auth** | `zitadel_app` | `8080` | Zitadel IAM (Identity and Access Management) |
 
 ## Configuration
 
-Le fichier `config.json` est bind-mounté depuis l'hôte et modifiable via le dashboard (Settings → Save). Les secrets sont masqués côté frontend (`********`) et préservés automatiquement lors des sauvegardes.
+La configuration de l'application est divisée en deux parties :
 
-| Clé | Description | Défaut |
+1. **Variables d'environnement (`.env`)** : Fichiers secrets liés à l'infrastructure (`DB_PASSWORD`, `ZITADEL_MACHINEKEY`, `ZITADEL_SERVICE_PAT`). Le backend refuse de démarrer si ces variables sont manquantes. `DEBUG_MODE=true` est requis pour accéder aux routes de test.
+2. **Configuration métier (`config.json`)** : Fichier géré via l'UI (`/api/config`) et stocké dans un volume Docker sécurisé (`fiber-tracker_app_config`). Les secrets (`SMTP_PASSWORD`, tokens Drive) sont masqués côté frontend (`********`).
+
+| Clé (Config UI) | Description | Défaut |
 |-----|------------|--------|
-| `TECHNICIENS` | Nom → numéro WhatsApp | — |
-| `MY_NUMBER` | Votre numéro principal | — |
-| `WATCH_FOLDER` | Dossier à surveiller | `/home/hus/Downloads` |
-| `MORNING_HOUR` / `MORNING_MINUTE` | Heure message matinal | `7:45` |
-| `STATS_INTERVAL_HOURS` / `STATS_INTERVAL_MINUTES` | Intervalle stats | `2:00` |
-| `EOD_HOUR` / `EOD_MINUTE` | Heure récap fin de journée | `17:00` |
-| `WEB_PORT` | Port du dashboard | `9510` |
-| `WHATSAPP_ENABLED` | Activer WhatsApp | `false` |
-| `SMTP_HOST` / `SMTP_PORT` | Serveur SMTP | `smtp.gmail.com:465` |
-| `SMTP_USERNAME` / `SMTP_PASSWORD` | Identifiants SMTP | — |
-| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | Credentials Zitadel | — |
-| `GDRIVE_ENABLED` / `GDRIVE_FOLDER_ID` | Intégration Google Drive | `false` |
+| `TECHNICIENS` | Mapping "Nom Technicien" → "Numéro WhatsApp" | — |
+| `SUPERVISEUR_PHONE` | Numéro du superviseur pour alertes globales | — |
+| `MORNING_HOUR` / `MORNING_MINUTE` | Heure du briefing WhatsApp matinal | `7:45` |
+| `STATS_INTERVAL_HOURS` / `STATS_INTERVAL_MINUTES` | Intervalle envois statistiques (WhatsApp) | `2:00` |
+| `EOD_HOUR` / `EOD_MINUTE` | Heure du récapitulatif fin de journée | `17:00` |
+| `WHATSAPP_ENABLED` | Activation de l'envoi de messages WhatsApp | `false` |
+| `SMTP_HOST` / `SMTP_PORT` | Serveur SMTP (Alertes & Reset Password) | `smtp.gmail.com:465` |
+| `GDRIVE_ENABLED` | Activation du sync Google Drive | `false` |
 
-## Fonctionnalités
+## Fonctionnalités Principales
 
-### 📊 Dashboard Temps Réel
-- Stats OK/NOK avec jauges circulaires animées
-- Fiches techniciens individuelles avec taux de réussite
-- Sélection de fichiers Excel depuis le dashboard
-- Notifications en temps réel (toast system)
+### 📊 Dashboard Temps Réel (SPA)
+- Frontend Vanilla JS (aucun framework lourd).
+- Stats OK/NOK avec jauges circulaires SVG animées.
+- Fiches performances par technicien (taux de réussite, RACC/SAV).
+- Diagramme de Gantt interactif (Planning).
+- Mode "Dark Premium" natif.
 
-### 📁 Gestion de Fichiers
-- Surveillance automatique du dossier configuré (`.xlsx`)
-- Upload drag & drop via le dashboard
-- Intégration Google Drive (OAuth2) pour sync automatique
+### 📁 Gestion & Watcher de Fichiers
+- Backend `fsnotify` qui surveille automatiquement les nouveaux `.xlsx` (stockés dans un volume partagé).
+- Upload manuel drag & drop via l'UI web.
+- Intégration Google Drive optionnelle pour le rapatriement distant automatique.
 
-### ⏰ Messages Planifiés
-- Message matinal configurable (heure exacte HH:MM)
-- Stats périodiques (intervalle configurable)
-- Récap fin de journée avec remerciements personnalisés
-- Variables dynamiques (`{prenom}`) dans les templates
+### ⏰ Planificateur de Tâches (Cron interne)
+- Boucle goroutine qui dispatche les alertes selon le calendrier configuré dans `config.json`.
+- Envoi automatique des briefings (07:45), des recaps réguliers, et de la clôture (17:00).
 
-### 📱 WhatsApp
-- Connexion via QR code directement dans le dashboard
-- Envoi de notifications automatisées aux techniciens
-- Test d'envoi intégré
-- Déconnexion sécurisée
+### 📱 WhatsApp (go-whatsmeow)
+- Connexion via QR Code dynamique dans l'UI des paramètres.
+- Persistance de la session Multi-Device dans PostgreSQL (évite les déconnexions).
+- Envoi asynchrone des statistiques et alertes.
 
-### 🔐 Authentification & Sécurité
-- Authentification OIDC via Zitadel
-- RBAC (admin / viewer)
-- Rate limiting sur les endpoints d'auth (5 tentatives/min)
-- Réinitialisation de mot de passe par email
-- Secrets masqués dans les réponses API (`SMTP_PASSWORD`, `OIDC_CLIENT_SECRET`, etc.)
-- Protection path traversal sur les uploads
-
-### 📧 Emails SMTP
-- Templates email dark-mode natives (résistent à l'inversion Gmail/Outlook)
-- Email de test SMTP intégré
-- Email de réinitialisation de mot de passe avec CTA
-- Logo Moca Consult embarqué (CID inline)
-
-### 🎨 Interface Premium
-- Design system dark-mode avec CSS custom properties
-- Time pickers FluxUI-inspired (dual-column heures/minutes)
-- Boutons de sauvegarde contextuels par section (activés au changement)
-- Animations micro-interactions et transitions fluides
-- Responsive mobile
+### 🔐 Sécurité & Authentification (Zitadel)
+- Auth "Headless" : utilisation de la *Session API v2* de Zitadel pour authentifier les utilisateurs directement sur `/login.html` sans redirections externes (nécessite un PAT `IAM_OWNER`).
+- Middleware propriétaire (`authWrap`) validant les JWT HttpOnly.
+- `rateLimitMiddleware` protégeant contre le brute-force, avec détection d'adresse IP (supportant le reverse-proxying Docker).
 
 ## API REST
 
-### Endpoints Publics (auth)
+### Endpoints Publics (Auth)
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| POST | `/api/auth/login` | Connexion locale (rate limited) |
-| GET | `/api/auth/login/oidc` | Initier le flux OIDC |
-| GET | `/api/auth/callback` | Callback OIDC |
-| POST | `/api/auth/logout` | Déconnexion |
-| POST | `/api/auth/forgot-password` | Demande de reset (rate limited) |
-| POST | `/api/auth/reset-password` | Reset mot de passe |
-| GET | `/api/auth/me` | Utilisateur courant |
+| POST | `/api/auth/login` | Login Headless via Zitadel (Rate-limited) |
+| POST | `/api/auth/logout` | Suppression du JWT HttpOnly |
+| POST | `/api/auth/forgot-password` | Envoi d'email de reset (Rate-limited) |
+| GET | `/api/auth/me` | Récupération d'identité courante |
 
-### Endpoints Protégés (JWT required)
+### Endpoints Protégés (Nécessite JWT)
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| GET | `/api/stats` | Stats actuelles |
-| GET | `/api/status` | État du serveur |
-| GET/PUT | `/api/config` | Lecture/modification config (PUT = admin) |
-| GET | `/api/notifications` | Historique notifications |
-| POST | `/api/upload` | Upload Excel (admin) |
-| POST | `/api/parse` | Parser un fichier (admin) |
-| GET | `/api/time` | Heure France (NTP/HTTP fallback) |
-| GET | `/api/files` | Liste des fichiers Excel |
-| POST | `/api/files/select` | Sélectionner un fichier actif |
+| GET | `/api/stats` | Renvoie le JSON complet des performances du jour |
+| GET/PUT | `/api/config` | Lecture ou modification du `config.json` |
+| POST | `/api/upload` | Upload d'un rapport `.xlsx` |
+| GET | `/api/whatsapp/qr` | Websocket/Polling stream pour afficher le QR Code de pairage |
 
-### Endpoints WhatsApp
+*(Voir le code source dans `web/server.go` pour la liste exhaustive)*
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/whatsapp/status` | Statut connexion |
-| GET | `/api/whatsapp/qr` | Générer QR code |
-| POST | `/api/whatsapp/send` | Envoyer un message |
-| POST | `/api/whatsapp/logout` | Déconnecter |
-
-### Endpoints Google Drive
-
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/drive/status` | Statut connexion Drive |
-| GET | `/api/drive/auth-url` | URL d'autorisation OAuth2 |
-| GET | `/api/drive/callback` | Callback OAuth2 |
-| POST | `/api/drive/disconnect` | Déconnecter Drive |
-| GET | `/api/drive/folders` | Lister les dossiers |
-| GET | `/api/drive/files` | Lister les fichiers |
-| POST | `/api/drive/sync` | Synchroniser maintenant |
-| POST | `/api/drive/set-folder` | Configurer le dossier source |
-
-### Endpoints SMTP
-
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| GET/POST | `/api/smtp/zitadel` | Lire/configurer SMTP Zitadel |
-| POST | `/api/smtp/zitadel/test` | Envoyer un email de test |
-| POST | `/api/smtp/test` | Test SMTP direct |
-
-## Commandes Utiles
+## Commandes Utiles (Maintenance)
 
 ```bash
-# Démarrer tous les services
+# Démarrer tous les services en production
 docker compose up -d --build
 
-# Reconstruire uniquement l'app
-docker compose up -d --build app
-
-# Redémarrer tous les services
-docker compose restart
-
-# Voir les logs en temps réel
+# Voir les logs de l'application Go
 docker compose logs -f app
 
-# Arrêter tout
-docker compose down
+# Redémarrer unitairement le container Go
+docker compose restart app
 
-# Arrêter et supprimer les volumes (reset DB)
+# Purger complètement la base de données et les sessions
 docker compose down -v
 ```
 
