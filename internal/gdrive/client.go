@@ -75,12 +75,7 @@ func (c *Client) SetFolder(folderID, folderName string) {
 	c.mu.Unlock()
 }
 
-// FolderID returns the current folder ID.
-func (c *Client) FolderID() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.folderID
-}
+
 
 // IsConfigured returns true if a folder is set.
 func (c *Client) IsConfigured() bool {

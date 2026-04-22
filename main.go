@@ -512,17 +512,7 @@ func normalizePhone(phone string) string {
 	return p
 }
 
-func formatStatsMessage(s *models.DailyStats) string {
-	msg := fmt.Sprintf("📊 *Stats du jour* (%s)\n\n", s.Date)
-	msg += fmt.Sprintf("✅ OK: %d\n", s.TotalOK)
-	msg += fmt.Sprintf("❌ NOK: %d\n", s.TotalNOK)
-	msg += fmt.Sprintf("📈 Taux OK: %.1f%%\n\n", s.RateOK)
-	msg += "*Par technicien:*\n"
-	for _, t := range s.ByTechnician {
-		msg += fmt.Sprintf("- %s: %d OK / %d NOK\n", t.Name, t.OK, t.NOK)
-	}
-	return msg
-}
+
 
 // formatSupervisorStatsMessage builds a dedicated, actionable stats message for the supervisor.
 func formatSupervisorStatsMessage(s *models.DailyStats) string {
@@ -578,23 +568,7 @@ func formatSupervisorStatsMessage(s *models.DailyStats) string {
 	return msg
 }
 
-func formatNOKAlert(s *models.DailyStats) string {
-	msg := fmt.Sprintf("🚨 *%d opération(s) NOK détectées*\n\n", s.TotalNOK)
-	limit := 5
-	if len(s.NOKRecords) < limit {
-		limit = len(s.NOKRecords)
-	}
-	for _, r := range s.NOKRecords[:limit] {
-		msg += fmt.Sprintf("• %s - %s\n", r.Tech, r.Type)
-		if r.Reason != "" {
-			msg += fmt.Sprintf("  Raison: %s\n", r.Reason)
-		}
-	}
-	if len(s.NOKRecords) > 5 {
-		msg += fmt.Sprintf("\n...et %d autres", len(s.NOKRecords)-5)
-	}
-	return msg
-}
+
 
 func formatMorningMessage(cfg *config.Config, techName string) string {
 	msg := cfg.MsgMorning

@@ -92,12 +92,3 @@ func HeadlessOIDCVerify(email, password, issuerURL, serviceAccountPAT string) er
 	return nil
 }
 
-// GetZitadelPAT returns the service account PAT from environment or config.
-func GetZitadelPAT() string {
-	pat := os.Getenv("ZITADEL_SERVICE_PAT")
-	if pat != "" {
-		return pat
-	}
-	// Fallback hardcoded for dev — will be overridden in production
-	return ""
-}

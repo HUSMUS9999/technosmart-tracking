@@ -379,19 +379,7 @@ func (c *Client) Logout() {
 	log.Println("[whatsapp] Logged out and session cleared")
 }
 
-// IsReady checks if the client can send messages.
-func (c *Client) IsReady() bool {
-	return c.IsConnected()
-}
 
-// GetLogs returns recent message logs.
-func (c *Client) GetLogs() []MessageLog {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	result := make([]MessageLog, len(c.logs))
-	copy(result, c.logs)
-	return result
-}
 
 // Disconnect cleanly shuts down the client.
 func (c *Client) Disconnect() {

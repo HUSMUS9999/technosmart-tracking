@@ -157,10 +157,7 @@ func (m *Mailer) SendTestEmail(toEmail, baseURL string) error {
 	return m.sendHTML(toEmail, subject, body)
 }
 
-// TestConnection sends a test email (backward compat — delegates to SendTestEmail).
-func (m *Mailer) TestConnection() error {
-	return m.SendTestEmail(m.cfg.From, "")
-}
+
 
 //go:embed logo-dark.png
 var logoData []byte
