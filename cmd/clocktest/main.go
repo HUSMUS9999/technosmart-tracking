@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"fiber-tracker/internal/config"
-	"fiber-tracker/internal/db"
-	"fiber-tracker/internal/excel"
-	"fiber-tracker/internal/models"
-	"fiber-tracker/internal/whatsapp"
+	"moca-tracker/internal/config"
+	"moca-tracker/internal/db"
+	"moca-tracker/internal/excel"
+	"moca-tracker/internal/models"
+	"moca-tracker/internal/whatsapp"
 	
 	"github.com/joho/godotenv"
 )
@@ -28,7 +28,7 @@ func main() {
 	flag.Parse()
 
 	fmt.Println("══════════════════════════════════════════")
-	fmt.Println("  🕐 Fiber Tracker — Clock Test Tool")
+	fmt.Println("  🕐 Moca Tracker — Clock Test Tool")
 	fmt.Println("══════════════════════════════════════════")
 	fmt.Println()
 
@@ -62,15 +62,15 @@ func main() {
 	}
 	dbUser := os.Getenv("DB_USER")
 	if dbUser == "" {
-		dbUser = "fiber_admin"
+		dbUser = "moca_admin"
 	}
 	dbPass := os.Getenv("DB_PASSWORD")
 	if dbPass == "" {
-		dbPass = "secret_fiber_password"
+		dbPass = "secret_moca_password"
 	}
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
-		dbName = "fiber_tracker"
+		dbName = "moca_tracker"
 	}
 	dbPort := os.Getenv("DB_PORT")
 	if dbPort == "" {

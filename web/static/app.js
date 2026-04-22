@@ -1,5 +1,5 @@
 /* ============================================
-   Fiber Tracker — Dashboard App Logic
+   Moca Tracker — Dashboard App Logic
    ============================================ */
 
 // ---- Logout ----
@@ -2133,7 +2133,7 @@ async function loadZitadelSMTPStatus() {
         document.getElementById('settingsSMTPPort').value = hostParts[1] || '587';
         document.getElementById('settingsSMTPUsername').value = config.user || '';
         document.getElementById('settingsSMTPFrom').value = config.senderAddress || '';
-        document.getElementById('settingsSMTPSenderName').value = config.senderName || 'Fiber Tracker';
+        document.getElementById('settingsSMTPSenderName').value = config.senderName || 'Moca Tracker';
         document.getElementById('settingsSMTPTLS').checked = config.tls !== false;
         // Don't populate password — Zitadel never returns it
 
@@ -2157,7 +2157,7 @@ async function syncSMTPToZitadel() {
         const user = document.getElementById('settingsSMTPUsername').value.trim();
         const password = document.getElementById('settingsSMTPPassword').value.trim();
         const from = document.getElementById('settingsSMTPFrom').value.trim();
-        const senderName = document.getElementById('settingsSMTPSenderName').value.trim() || 'Fiber Tracker';
+        const senderName = document.getElementById('settingsSMTPSenderName').value.trim() || 'Moca Tracker';
         const tls = document.getElementById('settingsSMTPTLS').checked;
 
         if (!host || !from) {

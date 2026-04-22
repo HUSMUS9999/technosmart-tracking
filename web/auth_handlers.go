@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"fiber-tracker/internal/auth"
-	"fiber-tracker/internal/config"
+	"moca-tracker/internal/auth"
+	"moca-tracker/internal/config"
 )
 
 // ---- Auth API ----

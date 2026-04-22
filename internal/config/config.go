@@ -8,7 +8,7 @@ import (
 	"sync"
 	
 	"github.com/joho/godotenv"
-	"fiber-tracker/internal/db"
+	"moca-tracker/internal/db"
 )
 
 // Config holds all application settings.

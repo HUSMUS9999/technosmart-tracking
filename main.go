@@ -16,24 +16,24 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"fiber-tracker/internal/auth"
-	"fiber-tracker/internal/config"
-	"fiber-tracker/internal/db"
-	"fiber-tracker/internal/excel"
-	"fiber-tracker/internal/gdrive"
-	"fiber-tracker/internal/models"
-	"fiber-tracker/internal/scheduler"
-	"fiber-tracker/internal/smtp"
-	"fiber-tracker/internal/watcher"
-	"fiber-tracker/internal/whatsapp"
-	"fiber-tracker/web"
+	"moca-tracker/internal/auth"
+	"moca-tracker/internal/config"
+	"moca-tracker/internal/db"
+	"moca-tracker/internal/excel"
+	"moca-tracker/internal/gdrive"
+	"moca-tracker/internal/models"
+	"moca-tracker/internal/scheduler"
+	"moca-tracker/internal/smtp"
+	"moca-tracker/internal/watcher"
+	"moca-tracker/internal/whatsapp"
+	"moca-tracker/web"
 )
 
 func main() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 
 	fmt.Println("══════════════════════════════════════════")
-	fmt.Println("  Moca Consult — Fiber Tracker")
+	fmt.Println("  Moca Consult — Moca Tracker")
 	fmt.Println("══════════════════════════════════════════")
 
 	// Load .env first if present to allow DB connection details to be read

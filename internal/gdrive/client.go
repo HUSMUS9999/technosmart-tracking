@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"fiber-tracker/internal/excel"
+	"moca-tracker/internal/excel"
 )
 
 // Client manages Google Drive public folder sync.

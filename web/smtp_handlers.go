@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"fiber-tracker/internal/config"
+	"moca-tracker/internal/config"
 )
 
 // ---- SMTP API ----

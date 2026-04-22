@@ -31,11 +31,11 @@ func InitDB() error {
 	dbHost := os.Getenv("DB_HOST")
 	if dbHost == "" { dbHost = "localhost" }
 	dbUser := os.Getenv("DB_USER")
-	if dbUser == "" { dbUser = "fiber_admin" }
+	if dbUser == "" { dbUser = "moca_admin" }
 	dbPass := os.Getenv("DB_PASSWORD")
 	if dbPass == "" { dbPass = "changeme" }
 	dbName := os.Getenv("DB_NAME")
-	if dbName == "" { dbName = "fiber_tracker" }
+	if dbName == "" { dbName = "moca_tracker" }
 	dbPort := os.Getenv("DB_PORT")
 	if dbPort == "" { dbPort = "5432" }
 

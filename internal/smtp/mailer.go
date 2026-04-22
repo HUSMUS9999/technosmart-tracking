@@ -76,7 +76,7 @@ func emailFooter() string {
         <table width="480" cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto;">
           <tr>
             <td align="center" style="padding-top:32px;color:#6b6b80;font-size:12px;line-height:1.5;">
-              <p style="margin:0;color:#6b6b80;">Cet email est généré automatiquement par Fiber Tracker.</p>
+              <p style="margin:0;color:#6b6b80;">Cet email est généré automatiquement par Moca Tracker.</p>
               <p style="margin:4px 0 0;color:#6b6b80;">&copy; 2026 Moca Consult. Tous droits réservés.</p>
             </td>
           </tr>
@@ -132,7 +132,7 @@ func (m *Mailer) SendTestEmail(toEmail, baseURL string) error {
 	body := emailHeader(baseURL) + `
               <h1 style="color:#f0f0f5;font-size:26px;font-weight:700;letter-spacing:-0.5px;margin:0 0 16px;text-align:center;">Test SMTP Réussi</h1>
               <p style="color:#a0a0b8;font-size:15px;line-height:1.6;margin:0 0 36px;text-align:center;">
-                Félicitations ! La configuration SMTP de votre tableau de bord <strong style="color:#f0f0f5;">Fiber Tracker</strong> fonctionne parfaitement.
+                Félicitations ! La configuration SMTP de votre tableau de bord <strong style="color:#f0f0f5;">Moca Tracker</strong> fonctionne parfaitement.
               </p>
 
               <div style="background-color:#252540;border:1px solid #35355a;border-radius:8px;padding:24px;">

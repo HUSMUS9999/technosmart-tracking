@@ -1,4 +1,4 @@
-# Fiber Tracker
+# Moca Tracker
 
 Suivi des interventions techniques fibre optique avec tableau de bord web en temps réel, notifications WhatsApp automatisées, et authentification sécurisée via Zitadel (IAM).
 
@@ -7,7 +7,7 @@ Suivi des interventions techniques fibre optique avec tableau de bord web en tem
 Application Go monolithique conteneurisée avec dashboard web embarqué (Vanilla JS), Zitadel pour l'authentification (via Headless API), et PostgreSQL pour la persistance (sessions whatsmeow) :
 
 ```text
-fiber-tracker/
+moca-tracker/
 ├── main.go                 # Point d'entrée + injection des dépendances
 ├── docker-compose.yml      # Orchestration multi-services (App, DB, Zitadel)
 ├── Dockerfile              # Build multi-stage (Go → Alpine)
@@ -47,8 +47,8 @@ Le dashboard est accessible à **http://localhost:9510**.
 
 | Service | Container | Port Host | Description |
 |---------|-----------|-----------|-------------|
-| **App** | `fiber_app` | `9510` | Backend Go + Dashboard Frontend |
-| **Database** | `fiber_db` | `5444` | PostgreSQL 16 (Stockage sessions WhatsApp) |
+| **App** | `moca_app` | `9510` | Backend Go + Dashboard Frontend |
+| **Database** | `moca_db` | `5444` | PostgreSQL 16 (Stockage sessions WhatsApp) |
 | **Auth** | `zitadel_app` | `8080` | Zitadel IAM (Identity and Access Management) |
 
 ## Configuration
@@ -56,7 +56,7 @@ Le dashboard est accessible à **http://localhost:9510**.
 La configuration de l'application est divisée en deux parties :
 
 1. **Variables d'environnement (`.env`)** : Fichiers secrets liés à l'infrastructure (`DB_PASSWORD`, `ZITADEL_MACHINEKEY`, `ZITADEL_SERVICE_PAT`). Le backend refuse de démarrer si ces variables sont manquantes. `DEBUG_MODE=true` est requis pour accéder aux routes de test.
-2. **Configuration métier (`config.json`)** : Fichier géré via l'UI (`/api/config`) et stocké dans un volume Docker sécurisé (`fiber-tracker_app_config`). Les secrets (`SMTP_PASSWORD`, tokens Drive) sont masqués côté frontend (`********`).
+2. **Configuration métier (`config.json`)** : Fichier géré via l'UI (`/api/config`) et stocké dans un volume Docker sécurisé (`moca-tracker_app_config`). Les secrets (`SMTP_PASSWORD`, tokens Drive) sont masqués côté frontend (`********`).
 
 | Clé (Config UI) | Description | Défaut |
 |-----|------------|--------|
