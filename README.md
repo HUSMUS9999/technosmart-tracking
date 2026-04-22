@@ -13,7 +13,7 @@ moca-tracker/
 ├── Dockerfile              # Build multi-stage (Go → Alpine)
 ├── internal/
 │   ├── auth/               # Middleware JWT, sessions Zitadel (Headless API), RBAC
-│   ├── config/             # Chargement/sauvegarde de la config JSON (Volume Docker)
+│   ├── config/             # Chargement/sauvegarde de la configuration (depuis PostgreSQL)
 │   ├── excel/              # Parsing Excel (.xlsx) et calcul des statistiques
 │   ├── gdrive/             # Intégration Google Drive (OAuth2)
 │   ├── models/             # Types de données (stats, notifications, interventions)
@@ -56,7 +56,7 @@ Le dashboard est accessible à **http://localhost:9510**.
 La configuration de l'application est divisée en deux parties :
 
 1. **Variables d'environnement (`.env`)** : Fichiers secrets liés à l'infrastructure (`DB_PASSWORD`, `ZITADEL_MACHINEKEY`, `ZITADEL_SERVICE_PAT`). Le backend refuse de démarrer si ces variables sont manquantes. `DEBUG_MODE=true` est requis pour accéder aux routes de test.
-2. **Configuration métier (`config.json`)** : Fichier géré via l'UI (`/api/config`) et stocké dans un volume Docker sécurisé (`moca-tracker_app_config`). Les secrets (`SMTP_PASSWORD`, tokens Drive) sont masqués côté frontend (`********`).
+2. **Configuration métier (PostgreSQL)** : Les paramètres dynamiques gérés via l'UI (`/api/config`) sont stockés de manière sécurisée dans la table `system_configs` de la base de données PostgreSQL, éliminant le besoin de fichiers de configuration en clair. Les secrets (`SMTP_PASSWORD`, tokens Drive) sont masqués côté frontend (`********`).
 
 | Clé (Config UI) | Description | Défaut |
 |-----|------------|--------|
@@ -84,7 +84,7 @@ La configuration de l'application est divisée en deux parties :
 - Intégration Google Drive optionnelle pour le rapatriement distant automatique.
 
 ### ⏰ Planificateur de Tâches (Cron interne)
-- Boucle goroutine qui dispatche les alertes selon le calendrier configuré dans `config.json`.
+- Boucle goroutine qui dispatche les alertes selon le calendrier configuré dans les paramètres (Base de données).
 - Envoi automatique des briefings (07:45), des recaps réguliers, et de la clôture (17:00).
 
 ### 📱 WhatsApp (go-whatsmeow)
@@ -113,7 +113,7 @@ La configuration de l'application est divisée en deux parties :
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
 | GET | `/api/stats` | Renvoie le JSON complet des performances du jour |
-| GET/PUT | `/api/config` | Lecture ou modification du `config.json` |
+| GET/PUT | `/api/config` | Lecture ou modification de la configuration système |
 | POST | `/api/upload` | Upload d'un rapport `.xlsx` |
 | GET | `/api/whatsapp/qr` | Websocket/Polling stream pour afficher le QR Code de pairage |
 
