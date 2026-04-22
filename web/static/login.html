@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moca Consult — Connexion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/login.css">
+</head>
+<body>
+    <div class="login-bg">
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+    </div>
+
+    <div class="login-container" id="loginContainer">
+        <!-- Login Form -->
+        <div class="login-card" id="loginCard">
+            <div class="login-logo">
+                <img src="/logo.png?v=3" alt="Moca Consult" class="logo-img">
+            </div>
+            <h1 class="login-title">Bienvenue</h1>
+            <p class="login-subtitle">Connectez-vous au tableau de bord</p>
+
+            <div class="login-error" id="loginError" style="display: none;"></div>
+
+            <form onsubmit="handleLogin(event)">
+                <div class="form-field">
+                    <label for="loginEmail">Email</label>
+                    <div class="input-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <input type="email" id="loginEmail" placeholder="email@example.com" required autofocus>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="loginPassword">Mot de passe</label>
+                    <div class="input-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span>Se connecter</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </button>
+            </form>
+
+            <a href="#" class="forgot-link" onclick="showForgotPassword(event)">Mot de passe oublié ?</a>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div class="login-card hidden" id="forgotCard">
+            <button class="back-btn" onclick="showLogin()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Retour
+            </button>
+            <h1 class="login-title">Mot de passe oublié</h1>
+            <p class="login-subtitle">Entrez votre email pour recevoir un lien de réinitialisation</p>
+
+            <div class="login-error" id="forgotError" style="display: none;"></div>
+            <div class="login-success" id="forgotSuccess" style="display: none;"></div>
+
+            <form onsubmit="handleForgotPassword(event)">
+                <div class="form-field">
+                    <label for="forgotEmail">Email</label>
+                    <div class="input-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <input type="email" id="forgotEmail" placeholder="email@example.com" required>
+                    </div>
+                </div>
+                <button type="submit" class="login-btn" id="forgotBtn">
+                    <span>Envoyer le lien</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Reset Password Form -->
+        <div class="login-card hidden" id="resetCard">
+            <h1 class="login-title">Nouveau mot de passe</h1>
+            <p class="login-subtitle">Choisissez un nouveau mot de passe sécurisé</p>
+
+            <div class="login-error" id="resetError" style="display: none;"></div>
+
+            <form onsubmit="handleResetPassword(event)">
+                <div class="form-field">
+                    <label for="resetPassword">Nouveau mot de passe</label>
+                    <div class="input-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <input type="password" id="resetPassword" placeholder="••••••••" required minlength="6">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="resetPasswordConfirm">Confirmer</label>
+                    <div class="input-wrapper">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <input type="password" id="resetPasswordConfirm" placeholder="••••••••" required minlength="6">
+                    </div>
+                </div>
+                <button type="submit" class="login-btn" id="resetBtn">
+                    <span>Réinitialiser</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button id="loginThemeToggle" onclick="toggleLoginTheme()" style="position:fixed;bottom:20px;right:20px;width:44px;height:44px;border-radius:50%;border:1px solid var(--border-subtle);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);z-index:10;transition:all 0.2s ease;" title="Changer le thème">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+
+    <script>
+        // Check for reset token in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('token');
+        const resetUserId = urlParams.get('user_id');
+        if (resetToken && resetUserId) {
+            document.getElementById('loginCard').classList.add('hidden');
+            document.getElementById('resetCard').classList.remove('hidden');
+        }
+
+        // Apply saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        if (savedTheme === 'light') {
+            document.querySelectorAll('.logo-img').forEach(img => img.src = '/logo-light.png?v=3');
+        }
+
+        function toggleLoginTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            const logoSrc = next === 'light' ? '/logo-light.png?v=3' : '/logo.png?v=3';
+            document.querySelectorAll('.logo-img').forEach(img => img.src = logoSrc);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const errEl = document.getElementById('loginError');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Connexion...';
+            errEl.style.display = 'none';
+
+            try {
+                const resp = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('loginEmail').value,
+                        password: document.getElementById('loginPassword').value,
+                    })
+                });
+                const data = await resp.json();
+                if (data.error) {
+                    errEl.textContent = data.error;
+                    errEl.style.display = 'block';
+                    errEl.style.background = '';
+                    errEl.style.borderColor = '';
+                    errEl.style.color = '';
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Se connecter</span>';
+                    return;
+                }
+                window.location.href = '/';
+            } catch (err) {
+                errEl.textContent = 'Erreur de connexion au serveur';
+                errEl.style.display = 'block';
+                errEl.style.background = '';
+                errEl.style.borderColor = '';
+                errEl.style.color = '';
+                btn.disabled = false;
+                btn.innerHTML = '<span>Se connecter</span>';
+            }
+        }
+
+        function showForgotPassword(e) {
+            e.preventDefault();
+            document.getElementById('loginCard').classList.add('hidden');
+            document.getElementById('forgotCard').classList.remove('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('forgotCard').classList.add('hidden');
+            document.getElementById('resetCard').classList.add('hidden');
+            document.getElementById('loginCard').classList.remove('hidden');
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            const btn = document.getElementById('forgotBtn');
+            const errEl = document.getElementById('forgotError');
+            const successEl = document.getElementById('forgotSuccess');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Envoi...';
+            errEl.style.display = 'none';
+            successEl.style.display = 'none';
+
+            try {
+                const resp = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('forgotEmail').value,
+                    })
+                });
+                const data = await resp.json();
+                if (data.error) {
+                    errEl.textContent = data.error;
+                    errEl.style.display = 'block';
+                } else {
+                    successEl.textContent = '📧 Si l\'adresse email existe, vous recevrez un email de réinitialisation.';
+                    successEl.style.display = 'block';
+                }
+            } catch (err) {
+                errEl.textContent = 'Erreur de connexion';
+                errEl.style.display = 'block';
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<span>Envoyer le lien</span>';
+        }
+
+        async function handleResetPassword(e) {
+            e.preventDefault();
+            const pw = document.getElementById('resetPassword').value;
+            const pwc = document.getElementById('resetPasswordConfirm').value;
+            const errEl = document.getElementById('resetError');
+            const btn = document.getElementById('resetBtn');
+
+            if (pw !== pwc) {
+                errEl.textContent = 'Les mots de passe ne correspondent pas';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>';
+            errEl.style.display = 'none';
+
+            try {
+                const resp = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: resetToken, userId: resetUserId, password: pw })
+                });
+                const data = await resp.json();
+                if (data.error) {
+                    errEl.textContent = data.error;
+                    errEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Réinitialiser</span>';
+                } else {
+                    window.location.href = '/login?reset=success';
+                }
+            } catch (err) {
+                errEl.textContent = 'Erreur de connexion';
+                errEl.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = '<span>Réinitialiser</span>';
+            }
+        }
+
+        // Show success message after reset
+        if (urlParams.get('reset') === 'success') {
+            const errEl = document.getElementById('loginError');
+            errEl.textContent = '✅ Mot de passe réinitialisé ! Connectez-vous.';
+            errEl.style.display = 'block';
+            errEl.style.background = 'rgba(34,197,94,0.1)';
+            errEl.style.borderColor = 'rgba(34,197,94,0.3)';
+            errEl.style.color = '#22c55e';
+        }
+        
+        // Show session errors if passed via URL parameters
+        if (urlParams.get('error')) {
+            const errEl = document.getElementById('loginError');
+            errEl.textContent = urlParams.get('error');
+            errEl.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

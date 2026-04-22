@@ -75,6 +75,12 @@ func (w *Watcher) Start() error {
 				if !strings.HasSuffix(strings.ToLower(event.Name), ".xlsx") {
 					continue
 				}
+				// Skip GDrive temp files (sync_tmp_N.xlsx) — they are
+				// renamed to their final name before we should process them.
+				// Firing on the temp name causes "no such file" parse errors.
+				if strings.HasPrefix(filepath.Base(event.Name), "sync_tmp_") {
+					continue
+				}
 				if event.Op&(fsnotify.Create|fsnotify.Write) == 0 {
 					continue
 				}

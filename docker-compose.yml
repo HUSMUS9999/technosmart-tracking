@@ -1,0 +1,86 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: fiber_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5444:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:v3.4.9
+    container_name: zitadel_app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    command: start-from-init --masterkey "${ZITADEL_MASTER_KEY}" --tlsMode disabled
+    environment:
+      - ZITADEL_DATABASE_POSTGRES_HOST=db
+      - ZITADEL_DATABASE_POSTGRES_PORT=5432
+      - ZITADEL_DATABASE_POSTGRES_DATABASE=${DB_NAME}
+      - ZITADEL_DATABASE_POSTGRES_USER_USERNAME=${DB_USER}
+      - ZITADEL_DATABASE_POSTGRES_USER_PASSWORD=${DB_PASSWORD}
+      - ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE=disable
+      - ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME=${DB_USER}
+      - ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD=${DB_PASSWORD}
+      - ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE=disable
+      - ZITADEL_MASTERKEY=${ZITADEL_MASTER_KEY}
+      - ZITADEL_EXTERNALDOMAIN=zitadel.localhost
+      - ZITADEL_EXTERNALPORT=8080
+      - ZITADEL_EXTERNALSECURE=false
+      - ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME=zitadel-admin
+      - ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD=Password1!
+      - ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED=false
+    # Allow Zitadel to resolve its own external domain so internal callbacks work
+    extra_hosts:
+      - "zitadel.localhost:host-gateway"
+
+  app:
+    build: .
+    container_name: fiber_app
+    ports:
+      - "9510:9510"
+    volumes:
+      - /home/hus/Downloads:/home/hus/Downloads
+      - app_config:/app/config
+    env_file:
+      - .env
+    environment:
+      # Override DB_HOST to use the internal Docker service name
+      - DB_HOST=db
+      - DB_PORT=5432
+      # OIDC — zitadel.localhost resolves via extra_hosts (host-gateway) inside the container.
+      # The browser OIDC redirect button only works from the Docker host machine because
+      # external browsers cannot resolve zitadel.localhost. Email+password login works from anywhere.
+      - OIDC_ISSUER_URL=http://zitadel.localhost:8080
+      - OIDC_REDIRECT_URI=http://localhost:9510/api/auth/callback
+    depends_on:
+      - db
+      - zitadel
+    extra_hosts:
+      - "zitadel.localhost:host-gateway"
+    links:
+      - zitadel
+    # Force IPv4 — Docker bridge doesn't route IPv6, which breaks WhatsApp WebSocket
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  app_config:

@@ -1,5 +1,23 @@
-whatsapp.db*
-wa.db
+# Binaries
 fiber-tracker
-testbuild
+test_build
+app_bin
+main
+
+# Database files
+whatsapp.db*
+wa.db*
+auth.db*
+*.db-shm
+*.db-wal
+
+# Config with secrets
+config.json
+.env
+
+# Excel data
 *.xlsx
+
+# IDE
+.idea/
+.vscode/

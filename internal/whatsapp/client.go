@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/skip2/go-qrcode"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/store/sqlstore"
@@ -29,7 +30,7 @@ type Client struct {
 	connected   bool
 	phoneNumber string
 	logs        []MessageLog
-	dbPath      string
+	connStr     string
 }
 
 // MessageLog records a sent message attempt.
@@ -40,16 +41,16 @@ type MessageLog struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// New creates a new WhatsApp client backed by SQLite.
-func New(dbPath string) (*Client, error) {
-	if dbPath == "" {
-		dbPath = "whatsapp.db"
+// New creates a new WhatsApp client backed by Postgres.
+func New(connStr string) (*Client, error) {
+	if connStr == "" {
+		return nil, fmt.Errorf("WhatsApp Postgres connection string is required")
 	}
 
 	c := &Client{
-		dbPath: dbPath,
-		status: "initializing",
-		logs:   make([]MessageLog, 0),
+		connStr: connStr,
+		status:  "initializing",
+		logs:    make([]MessageLog, 0),
 	}
 
 	if err := c.init(); err != nil {
@@ -62,8 +63,8 @@ func New(dbPath string) (*Client, error) {
 func (c *Client) init() error {
 	container, err := sqlstore.New(
 		context.Background(),
-		"sqlite3",
-		"file:"+c.dbPath+"?_journal_mode=WAL&_busy_timeout=5000&_foreign_keys=on",
+		"postgres",
+		c.connStr,
 		nil,
 	)
 	if err != nil {
@@ -186,6 +187,18 @@ func (c *Client) StartQRLogin() error {
 		c.mu.Unlock()
 		return nil // already running
 	}
+
+	// Important: whatsmeow does not allow getting a new QR channel if the client state
+	// is already contaminated by a timeout. Recreate the client to ensure it's fresh.
+	if c.container != nil && c.client != nil {
+		c.client.Disconnect() // Ensure old connection is closed
+	}
+	if c.container != nil {
+		deviceStore := c.container.NewDevice()
+		c.client = whatsmeow.NewClient(deviceStore, nil)
+		c.client.AddEventHandler(c.handleEvent)
+	}
+
 	c.qrActive = true
 	c.qrCode = ""
 	c.status = "waiting_qr"
@@ -303,6 +316,9 @@ func (c *Client) SendMessage(phoneNumber, message string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// Strip leading '+' — whatsmeow JIDs use bare numbers (e.g. "213540549455")
+	cleanNumber := strings.TrimPrefix(phoneNumber, "+")
+
 	entry := MessageLog{
 		To:      phoneNumber,
 		Message: message,
@@ -316,9 +332,12 @@ func (c *Client) SendMessage(phoneNumber, message string) error {
 		return fmt.Errorf("WhatsApp not connected")
 	}
 
-	jid := types.NewJID(phoneNumber, types.DefaultUserServer)
+	jid := types.NewJID(cleanNumber, types.DefaultUserServer)
 
-	resp, err := c.client.SendMessage(context.Background(), jid, &waE2E.Message{
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	resp, err := c.client.SendMessage(ctx, jid, &waE2E.Message{
 		Conversation: proto.String(message),
 	})
 	if err != nil {
@@ -344,6 +363,14 @@ func (c *Client) Logout() {
 		c.client.Logout(context.Background())
 		c.client.Disconnect()
 	}
+	
+	// Recreate client to allow a fresh QR linking session
+	if c.container != nil {
+		deviceStore := c.container.NewDevice()
+		c.client = whatsmeow.NewClient(deviceStore, nil)
+		c.client.AddEventHandler(c.handleEvent)
+	}
+
 	c.connected = false
 	c.status = "logged_out"
 	c.phoneNumber = ""

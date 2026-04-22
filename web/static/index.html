@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technosmart — Dashboard</title>
-    <meta name="description" content="Technosmart — Suivi des interventions fibre optique en temps réel">
+    <meta name="rand_1776616217" content="width=device-width, initial-scale=1.0">
+    <title>Moca Consult — Dashboard</title>
+    <meta name="rand_1776616217" content="Moca Consult — Suivi des interventions fibre optique en temps réel">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="#" class="logo-link" onclick="switchView('dashboard');return false">
-                <img src="/logo.png" alt="Technosmart" class="logo-img">
+                <img src="/logo.png?v=3" alt="Moca Consult" class="logo-img">
             </a>
             <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -109,36 +109,7 @@
             </div>
         </nav>
 
-        <div class="sidebar-footer">
-            <div class="footer-row">
-                <div class="ntp-clock" id="ntpClock">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    <div>
-                        <div class="ntp-time" id="ntpTime">--:--:--</div>
-                        <div class="ntp-date" id="ntpDate">France</div>
-                    </div>
-                </div>
-                <button class="theme-toggle-mini" id="themeToggle" title="Changer le thème" onclick="toggleTheme()">
-                    <svg class="theme-icon sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="5"/>
-                        <line x1="12" y1="1" x2="12" y2="3"/>
-                        <line x1="12" y1="21" x2="12" y2="23"/>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                        <line x1="1" y1="12" x2="3" y2="12"/>
-                        <line x1="21" y1="12" x2="23" y2="12"/>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                    </svg>
-                    <svg class="theme-icon moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
+
     </aside>
 
     <!-- Sidebar overlay (mobile backdrop) -->
@@ -153,11 +124,64 @@
                 <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
         </button>
-        <img src="/logo.png" alt="Technosmart" class="mobile-logo-img">
+        <img src="/logo.png?v=3" alt="Moca Consult" class="mobile-logo-img">
     </header>
 
     <!-- Main Content Area -->
     <main class="main-content" id="mainContent">
+        
+        <!-- Global Top Bar -->
+        <header class="main-top-bar">
+            <div class="top-bar-left">
+                <div class="greeting-emoji">👋</div>
+                <div class="greeting-text">
+                    <div class="greeting-primary">Bonjour</div>
+                    <div class="greeting-secondary">Gérez vos interventions en temps réel</div>
+                </div>
+            </div>
+            
+            <div class="top-bar-right">
+                <!-- HeroUI styled clock badge -->
+                <div class="ntp-clock" id="ntpClock">
+                    <div class="analog-dial" id="analogDial">
+                        <div class="clock-center-dot"></div>
+                        <div class="clock-hand hour-hand" id="hourHand"></div>
+                        <div class="clock-hand minute-hand" id="minuteHand"></div>
+                        <div class="clock-hand second-hand" id="secondHand"></div>
+                    </div>
+                    <div class="ntp-details">
+                        <div class="ntp-time" id="ntpTime">--:--:--</div>
+                        <div class="ntp-date" id="ntpDate">France</div>
+                    </div>
+                </div>
+                
+                <div class="top-bar-actions">
+                    <button class="theme-toggle-mini" id="themeToggle" title="Changer le thème" onclick="toggleTheme()">
+                        <svg class="theme-icon sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                        <svg class="theme-icon moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                    <button type="button" class="theme-toggle-mini danger" id="logoutBtn" title="Déconnexion" onclick="doLogout()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
         <!-- Dashboard View -->
         <section class="view active" id="view-dashboard">
             <div class="view-header">
@@ -204,9 +228,9 @@
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
                     </div>
-                    <div class="metric-value green" id="metricOK">—</div>
-                    <div class="metric-footer">
-                        <div class="metric-bar"><div class="metric-bar-fill green" id="barOK" style="width:0%"></div></div>
+                    <div class="metric-value-split green" id="metricOK">
+                        <div class="split-col"><span class="split-label">RACC</span><span id="metricOKRacc">—</span></div>
+                        <div class="split-col"><span class="split-label">SAV</span><span id="metricOKSav">—</span></div>
                     </div>
                 </div>
                 <div class="metric-card" id="metric-nok">
@@ -216,9 +240,9 @@
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </div>
                     </div>
-                    <div class="metric-value red" id="metricNOK">—</div>
-                    <div class="metric-footer">
-                        <div class="metric-bar"><div class="metric-bar-fill red" id="barNOK" style="width:0%"></div></div>
+                    <div class="metric-value-split red" id="metricNOK">
+                        <div class="split-col"><span class="split-label">RACC</span><span id="metricNOKRacc">—</span></div>
+                        <div class="split-col"><span class="split-label">SAV</span><span id="metricNOKSav">—</span></div>
                     </div>
                 </div>
                 <div class="metric-card" id="metric-rate">
@@ -228,9 +252,9 @@
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
                         </div>
                     </div>
-                    <div class="metric-value" id="metricRate">—</div>
-                    <div class="metric-footer">
-                        <span class="metric-change" id="metricRateLabel">—</span>
+                    <div class="metric-value-split" id="metricRate">
+                        <div class="split-col"><span class="split-label">RACC</span><span id="metricRateRacc" style="font-size:1.2rem">—</span></div>
+                        <div class="split-col"><span class="split-label">SAV</span><span id="metricRateSav" style="font-size:1.2rem">—</span></div>
                     </div>
                 </div>
             </div>
@@ -241,8 +265,7 @@
                     <div class="card-header">
                         <h3>Répartition OK / NOK</h3>
                         <div class="card-tabs">
-                            <button class="tab active" data-chart="global">Global</button>
-                            <button class="tab" data-chart="racc">RACC</button>
+                            <button class="tab active" data-chart="racc">RACC</button>
                             <button class="tab" data-chart="sav">SAV</button>
                         </div>
                     </div>
@@ -283,20 +306,19 @@
             <div class="card" id="nokAlertCard" style="display:none;">
                 <div class="card-header red-accent">
                     <h3>🚨 Opérations NOK</h3>
-                    <span class="badge badge-red" id="nokAlertCount">0</span>
                 </div>
                 <div class="card-body no-pad">
                     <div class="table-wrapper">
                         <table class="data-table" id="nokTable">
                             <thead>
                                 <tr>
-                                    <th>Technicien</th>
-                                    <th>Type</th>
-                                    <th>Jeton</th>
-                                    <th>Dépt.</th>
-                                    <th>Durée</th>
-                                    <th>Raison</th>
-                                    <th>Catégorie</th>
+                                    <th class="sortable" onclick="sortNOKTable('tech')" data-field="tech">Technicien <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortNOKTable('type')" data-field="type">Type <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortNOKTable('reference')" data-field="reference">Jeton <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortNOKTable('dept')" data-field="dept">Dépt. <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortNOKTable('duration')" data-field="duration">Durée <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortNOKTable('reason')" data-field="reason">Raison <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortNOKTable('category')" data-field="category">Catégorie <span class="sort-icon"></span></th>
                                 </tr>
                             </thead>
                             <tbody id="nokTableBody"></tbody>
@@ -316,7 +338,7 @@
                 <div class="header-actions">
                     <div class="search-box">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" placeholder="Rechercher..." id="interventionSearch">
+                        <input type="text" placeholder="Rechercher..." id="interventionSearch" name="rand_1776616217" autocomplete="off" role="presentation" readonly onfocus="this.removeAttribute('readonly');" data-lpignore="true" data-1p-ignore>
                     </div>
                     <select class="filter-select" id="stateFilter">
                         <option value="">Tous les états</option>
@@ -336,25 +358,28 @@
                         <table class="data-table" id="interventionsTable">
                             <thead>
                                 <tr>
-                                    <th>Jeton</th>
-                                    <th>Tech</th>
-                                    <th>Type</th>
-                                    <th>État</th>
-                                    <th>Début</th>
-                                    <th>Fin</th>
-                                    <th>Durée</th>
-                                    <th>Dépt.</th>
-                                    <th>Zone</th>
-                                    <th>Retard</th>
-                                    <th>Code d'échec</th>
+                                    <th class="sortable" onclick="sortInterventions('reference')" data-field="reference">Jeton <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('tech')" data-field="tech">Tech <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('type')" data-field="type">Type <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('state')" data-field="state">État <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('start_time')" data-field="start_time">Début <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('end_time')" data-field="end_time">Fin <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('duration')" data-field="duration">Durée <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('department')" data-field="department">Dépt. <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('zone')" data-field="zone">Zone <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('delay_type')" data-field="delay_type">Retard <span class="sort-icon"></span></th>
+                                    <th class="sortable" onclick="sortInterventions('fail_code')" data-field="fail_code">Code d'échec <span class="sort-icon"></span></th>
                                 </tr>
                             </thead>
                             <tbody id="interventionsBody"></tbody>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <span id="interventionCount">0 interventions</span>
+                <div class="card-footer" style="padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span id="interventionCount" style="font-weight:bold; color:var(--text-primary);">0 interventions</span>
+                    </div>
+                    <div class="pagination" id="interventionsPagination"></div>
                 </div>
             </div>
         </section>
@@ -367,17 +392,23 @@
                     <p class="view-subtitle">Performance individuelle</p>
                 </div>
                 <div class="header-actions">
+                    <div class="search-box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" placeholder="Rechercher un technicien..." id="techSearch" name="rand_1776616217" autocomplete="off" role="presentation" readonly onfocus="this.removeAttribute('readonly');" data-lpignore="true" data-1p-ignore>
+                    </div>
                     <select class="filter-select" id="techSort">
-                        <option value="nok">Trier par NOK (desc)</option>
-                        <option value="ok">Trier par OK (desc)</option>
-                        <option value="rate">Trier par taux (asc)</option>
-                        <option value="name">Trier par nom</option>
+                        <option value="racc_nok">RACC NOK (desc)</option>
+                        <option value="sav_nok">SAV NOK (desc)</option>
+                        <option value="racc_ok">RACC OK (desc)</option>
+                        <option value="sav_ok">SAV OK (desc)</option>
+                        <option value="name">Nom</option>
                     </select>
                 </div>
             </div>
             <div class="tech-grid" id="techGrid">
                 <div class="empty-state">Aucune donnée</div>
             </div>
+            <div class="pagination" id="techPagination"></div>
         </section>
 
         <!-- GANTT View -->
@@ -433,20 +464,20 @@
                     <h3>Toutes les interventions NOK</h3>
                 </div>
                 <div class="card-body no-pad">
-                    <div class="table-wrapper">
+                    <div class="table-wrapper" style="max-height: 600px; overflow-y: auto;">
                         <table class="data-table" id="failureTable">
                             <thead>
                                 <tr>
-                                    <th>Technicien</th>
-                                    <th>Type</th>
-                                    <th>Réf.</th>
-                                    <th>PM</th>
-                                    <th>Dépt.</th>
-                                    <th>Début</th>
-                                    <th>Fin</th>
-                                    <th>Durée</th>
-                                    <th>Raison</th>
-                                    <th>Catégorie</th>
+                                    <th style="cursor:pointer" onclick="sortFailures('tech')">Technicien <span class="sort-icon" id="sort-icon-tech"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('type')">Type <span class="sort-icon" id="sort-icon-type"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('reference')">Réf. <span class="sort-icon" id="sort-icon-reference"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('pm')">PM <span class="sort-icon" id="sort-icon-pm"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('department')">Dépt. <span class="sort-icon" id="sort-icon-department"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('start_time')">Début <span class="sort-icon" id="sort-icon-start_time"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('end_time')">Fin <span class="sort-icon" id="sort-icon-end_time"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('duration')">Durée <span class="sort-icon" id="sort-icon-duration"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('reason')">Raison <span class="sort-icon" id="sort-icon-reason"></span></th>
+                                    <th style="cursor:pointer" onclick="sortFailures('category')">Catégorie <span class="sort-icon" id="sort-icon-category"></span></th>
                                 </tr>
                             </thead>
                             <tbody id="failureBody"></tbody>
@@ -462,6 +493,15 @@
                 <div>
                     <h1>Notifications</h1>
                     <p class="view-subtitle">Historique des messages envoyés</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="clearAllNotifications()" style="color:var(--red-400); border-color:var(--red-400)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Tout supprimer
+                    </button>
                 </div>
             </div>
             <div class="card">
@@ -514,68 +554,87 @@
                     <p class="view-subtitle">Configuration de l'application</p>
                 </div>
                 <div class="header-actions">
-                    <button class="btn btn-primary" onclick="saveSettings()" id="saveSettingsBtn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                            <polyline points="17 21 17 13 7 13 7 21"/>
-                            <polyline points="7 3 7 8 15 8"/>
-                        </svg>
-                        Sauvegarder
-                    </button>
                 </div>
             </div>
             <div class="settings-grid">
                 <div class="card">
-                    <div class="card-header"><h3>📱 Mon numéro WhatsApp</h3></div>
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3>📱 Mon numéro WhatsApp</h3>
+                        <button class="btn btn-primary" onclick="saveSettings(false, this)" id="saveNumBtn" disabled style="opacity:0.45;cursor:not-allowed;transition:opacity 0.2s;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Sauvegarder
+                        </button>
+                    </div>
                     <div class="card-body">
                         <div class="form-group">
                             <label>Numéro principal (recevra les alertes et stats)</label>
-                            <input type="tel" id="settingsMyNumber" class="form-input" placeholder="+33612345678">
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="tel" id="settingsMyNumber" class="form-input" placeholder="+33612345678" readonly style="flex:1; background-color: var(--bg-tertiary);">
+                                <button class="btn btn-secondary" onclick="toggleNumberLock(this)" title="Modifier (déverrouiller)" type="button">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lock-icon">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                </button>
+                            </div>
                             <span class="form-hint">Format international: +33XXXXXXXXX</span>
                         </div>
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-header"><h3>⚙️ Général</h3></div>
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3>⚙️ Général</h3>
+                        <button class="btn btn-primary" onclick="saveSettings(false, this)" id="saveGenBtn" disabled style="opacity:0.45;cursor:not-allowed;transition:opacity 0.2s;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Sauvegarder
+                        </button>
+                    </div>
                     <div class="card-body">
-                        <div class="form-group">
-                            <label>Dossier surveillé</label>
-                            <input type="text" id="settingsWatchFolder" class="form-input" placeholder="/home/user/Downloads">
-                        </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Heure message matinal</label>
-                                <input type="number" id="settingsHour" class="form-input" min="0" max="23">
+                                <input type="time" id="settingsMorningTime" class="form-input" value="08:00" style="cursor:pointer;">
+                                <small class="form-hint">Heure d'envoi du message de bienvenue aux techniciens</small>
                             </div>
                             <div class="form-group">
-                                <label>Intervalle stats (heures)</label>
-                                <input type="number" id="settingsInterval" class="form-input" min="1" max="12">
+                                <label>Intervalle stats</label>
+                                <input type="time" id="settingsInterval" class="form-input" value="02:00" style="cursor:pointer;">
+                                <small class="form-hint">Intervalle entre chaque envoi de stats (HH:MM). Arrêt automatique à l'heure de fin de journée.</small>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Heure rapport fin de journée</label>
-                                <input type="number" id="settingsEODHour" class="form-input" min="0" max="23" placeholder="17">
+                                <input type="time" id="settingsEODTime" class="form-input" value="17:00" style="cursor:pointer;">
                                 <small class="form-hint">Envoie le rapport final + remerciements aux techniciens</small>
                             </div>
                         </div>
-                        <div class="form-group">
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3>🔗 Connexion WhatsApp</h3>
+                        <span class="wa-status" id="waStatusBadge">...</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- WhatsApp Toggle — moved here -->
+                        <div class="form-group" style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
                             <label class="toggle-label">
                                 <span>WhatsApp activé</span>
                                 <input type="checkbox" id="settingsWhatsApp">
                                 <span class="toggle-switch"></span>
                             </label>
                         </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🔗 Connexion WhatsApp</h3>
-                        <span class="wa-status" id="waStatusBadge">Déconnecté</span>
-                    </div>
-                    <div class="card-body">
                         <div id="waContent">
-                            <div class="wa-section" id="waQRSection">
+                            <div class="wa-section" id="waQRSection" style="display:none">
                                 <p class="wa-hint">Scannez le QR code avec WhatsApp sur votre téléphone :<br>
                                 <em>WhatsApp → ⋮ → Appareils liés → Lier un appareil</em></p>
                                 <div class="wa-qr-container" id="waQRContainer">
@@ -623,37 +682,180 @@
                         </div>
                     </div>
                 </div>
+                <div class="card">
+                    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3>💬 Messages WhatsApp</h3>
+                        <button class="btn btn-primary" onclick="saveSettings(false, this)" id="saveMsgBtn" disabled style="opacity:0.45;cursor:not-allowed;transition:opacity 0.2s;">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Sauvegarder
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Message de test</label>
+                            <textarea id="settingsMsgTest" class="form-input" rows="2" placeholder="✅ Test — la connexion WhatsApp fonctionne !"></textarea>
+                            <span class="form-hint">Envoyé quand vous cliquez "Envoyer un test"</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Message du matin</label>
+                            <textarea id="settingsMsgMorning" class="form-input" rows="4" placeholder="🌅 Bonjour {prenom} ! ..."></textarea>
+                            <span class="form-hint">Utilisez <code>{prenom}</code> pour le prénom du technicien</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Message fin de journée (remerciement)</label>
+                            <textarea id="settingsMsgEODThanks" class="form-input" rows="3" placeholder="👋 Bonsoir {prenom} ! ..."></textarea>
+                            <span class="form-hint">Utilisez <code>{prenom}</code> pour le prénom du technicien. Les stats sont ajoutées automatiquement.</span>
+                        </div>
+                        <div class="form-group">
+                            <label>⚠️ Message relance démarrage (intervention non démarrée)</label>
+                            <textarea id="settingsMsgLateStart" class="form-input" rows="6" placeholder="Bonjour, Je constate que ton intervention n'a pas encore été démarrée..."></textarea>
+                            <span class="form-hint">Envoyé automatiquement si une intervention n'a pas encore été démarrée (champ <code>Début d'intervention</code> vide + <code>Terminée</code> ≠ OUI). Supporte <code>{prenom}</code>.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SMTP Configuration Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📧 Configuration SMTP</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Serveur SMTP</label>
+                                <input type="text" id="settingsSMTPHost" class="form-input" placeholder="smtp.gmail.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Port</label>
+                                <input type="number" id="settingsSMTPPort" class="form-input" placeholder="587">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Utilisateur</label>
+                                <input type="text" id="settingsSMTPUsername" class="form-input" placeholder="votre@email.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Mot de passe</label>
+                                <input type="password" id="settingsSMTPPassword" class="form-input" placeholder="••••••••" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Adresse d'envoi (From)</label>
+                                <input type="email" id="settingsSMTPFrom" class="form-input" placeholder="noreply@mocaconsult.fr">
+                            </div>
+                            <div class="form-group">
+                                <label>Nom d'expéditeur</label>
+                                <input type="text" id="settingsSMTPSenderName" class="form-input" placeholder="Fiber Tracker" value="Fiber Tracker">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                                <input type="checkbox" id="settingsSMTPTLS" checked style="width:18px;height:18px;">
+                                <span>Utiliser TLS (recommandé pour les ports 587 et 465)</span>
+                            </label>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;display:flex;align-items:center;gap:8px;">
+                            <button class="btn btn-primary" onclick="syncSMTPToZitadel()" id="saveSMTPBtn" disabled style="opacity:0.45;cursor:not-allowed;transition:opacity 0.2s;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+                                Sauvegarder SMTP
+                            </button>
+                            <span class="form-hint" style="margin:0;">Modifiez un champ pour activer la sauvegarde</span>
+                        </div>
+
+                        <!-- Test Section -->
+                        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">
+                            <label style="font-size:0.88rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;display:block;">🧪 Tester la configuration</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="email" id="smtpTestEmail" class="form-input" placeholder="destinataire@email.com" style="flex:1;min-width:200px;">
+                                <button class="btn btn-secondary" onclick="testZitadelSMTP()" id="smtpTestBtn" style="white-space:nowrap">📨 Envoyer le test</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Google Drive Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📁 Google Drive</h3>
+                        <span class="wa-status" id="driveStatusBadge">Non configuré</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Not configured: show link input -->
+                        <div id="driveNotConnected">
+                            <div class="form-group">
+                                <label>Lien du dossier Google Drive</label>
+                                <div style="display:flex;gap:8px">
+                                    <input type="text" id="driveLinkInput" class="form-input" placeholder="https://drive.google.com/drive/folders/..." style="flex:1">
+                                    <button class="btn btn-primary" onclick="setDriveLink()" style="white-space:nowrap">Connecter</button>
+                                </div>
+                                <span class="form-hint">Partagez le dossier avec <b>« Tous ceux qui ont le lien »</b> puis collez le lien ici</span>
+                            </div>
+                        </div>
+
+                        <!-- Configured: show status + sync -->
+                        <div id="driveConnected" style="display:none">
+                            <div class="wa-connected-info" style="margin-bottom:16px">
+                                <div class="wa-connected-icon">✅</div>
+                                <div>
+                                    <strong>Google Drive connecté</strong>
+                                    <p id="driveFolderDisplay" class="wa-phone">Chargement...</p>
+                                </div>
+                            </div>
+                            <div class="wa-actions">
+                                <button class="btn btn-primary" onclick="syncDriveNow()">🔄 Synchroniser</button>
+                                <button class="btn btn-danger" onclick="disconnectGDrive()">🔌 Déconnecter</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Technicians management card - full width -->
             <div class="card" style="margin-top:var(--space-xl)">
                 <div class="card-header">
                     <h3>👷 Techniciens</h3>
-                    <button class="btn btn-secondary" onclick="addTechRow()" id="addTechBtn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Ajouter
-                    </button>
+                    <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;">
+                        <div class="search-box" style="max-width:260px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" placeholder="Filtrer..." id="techConfigSearch" oninput="filterTechConfigTable()" name="rand_1776616217" autocomplete="off" role="presentation" readonly onfocus="this.removeAttribute('readonly');" data-lpignore="true" data-1p-ignore>
+                        </div>
+                        <button class="btn btn-secondary" onclick="addTechRow()" id="addTechBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Ajouter
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body no-pad">
                     <div class="table-wrapper">
                         <table class="data-table" id="techConfigTable">
                             <thead>
                                 <tr>
-                                    <th style="width:40%">Nom du technicien</th>
-                                    <th style="width:35%">Numéro WhatsApp</th>
-                                    <th style="width:25%;text-align:center">Actions</th>
+                                    <th style="width:30%">Nom</th>
+                                    <th style="width:30%">Prénom</th>
+                                    <th style="width:25%">Numéro WhatsApp</th>
+                                    <th style="width:15%;text-align:center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="techConfigBody"></tbody>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <span id="techCount">0 techniciens</span>
-                    <span style="margin-left:auto;color:var(--text-tertiary);font-size:0.78rem">Modifiez les noms et numéros directement dans le tableau</span>
+                <div class="card-footer" style="padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span id="techCount" style="font-weight:bold; color:var(--text-primary); margin-right: 12px;">Chargement...</span>
+                    </div>
+                    <div class="pagination" id="techConfigPagination"></div>
                 </div>
             </div>
         </section>
@@ -679,15 +881,22 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            <input type="text" id="filePanelSearch" placeholder="Rechercher un fichier..." oninput="filterFileList(this.value)">
-        </div>
-        <div class="file-panel-sort">
-            <button class="sort-btn active" data-sort="name" onclick="sortFileList('name', this)">Nom</button>
-            <button class="sort-btn" data-sort="date" onclick="sortFileList('date', this)">Date</button>
-            <button class="sort-btn" data-sort="size" onclick="sortFileList('size', this)">Taille</button>
+            <input type="text" id="filePanelSearch" placeholder="Filtrer par date (ex: 13 avril)..." oninput="filterFileList(this.value)" name="rand_1776616217" autocomplete="off" role="presentation" readonly onfocus="this.removeAttribute('readonly');" data-lpignore="true" data-1p-ignore>
         </div>
         <div class="file-panel-list" id="filePanelList">
             <div class="empty-state small">Chargement...</div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+        <div class="card" style="width:100%; max-width:400px; padding:24px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+            <div style="color:var(--text-primary); font-size:1.1rem; font-weight:600; margin-bottom:12px;" id="confirmModalTitle">Veuillez confirmer</div>
+            <p style="color:var(--text-secondary); margin-bottom:24px; line-height:1.5;" id="confirmModalMessage">Êtes-vous sûr ?</p>
+            <div style="display:flex; justify-content:center; gap:12px;">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Annuler</button>
+                <button class="btn btn-primary" id="confirmModalBtn" onclick="confirmModalOk()" style="background:#ef4444; border-color:#ef4444;">Confirmer</button>
+            </div>
         </div>
     </div>
 

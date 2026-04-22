@@ -2,12 +2,34 @@
    Fiber Tracker — Dashboard App Logic
    ============================================ */
 
+// ---- Logout ----
+function doLogout() {
+    try {
+        // Synchronous XHR ensures the Set-Cookie (clear) response is processed
+        // before we navigate away. This is intentionally blocking.
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/auth/logout', false); // synchronous
+        xhr.send();
+    } catch (e) {
+        // Network error — still redirect
+    }
+    window.location.href = '/login';
+}
+
 // ---- Theme (runs immediately to prevent flash) ----
+function updateLogoForTheme(theme) {
+    const src = theme === 'light' ? '/logo-light.png?v=3' : '/logo.png?v=3';
+    document.querySelectorAll('.logo-img, .mobile-logo-img').forEach(img => {
+        img.src = src;
+    });
+}
+
 (function initTheme() {
     const saved = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = saved || (prefersDark ? 'dark' : 'dark'); // default dark
     document.documentElement.setAttribute('data-theme', theme);
+    document.addEventListener('DOMContentLoaded', () => updateLogoForTheme(theme));
 })();
 
 function toggleTheme() {
@@ -16,16 +38,41 @@ function toggleTheme() {
     const next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
+    updateLogoForTheme(next);
     // Re-render charts with new theme colors
     if (statsData) {
         updateDashboard(statsData);
     }
 }
 
+// ---- Custom Confirm Modal ----
+let currentConfirmResolve = null;
+
+function showConfirm(title, message) {
+    return new Promise(resolve => {
+        document.getElementById('confirmModalTitle').textContent = title;
+        document.getElementById('confirmModalMessage').textContent = message;
+        document.getElementById('confirmModal').style.display = 'flex';
+        currentConfirmResolve = resolve;
+    });
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').style.display = 'none';
+    if(currentConfirmResolve) currentConfirmResolve(false);
+    currentConfirmResolve = null;
+}
+
+function confirmModalOk() {
+    document.getElementById('confirmModal').style.display = 'none';
+    if(currentConfirmResolve) currentConfirmResolve(true);
+    currentConfirmResolve = null;
+}
+
 // ---- State ----
 let currentView = 'dashboard';
 let statsData = null;
-let chartMode = 'global';      // global | racc | sav
+let chartMode = 'racc';      // racc | sav
 let breakdownMode = 'dept';    // dept | zone
 let notifications = [];
 
@@ -152,17 +199,45 @@ function switchView(view, fromHash) {
     }
 
     // Update page title
-    document.title = `Technosmart — ${viewTitles[view] || 'Dashboard'}`;
+    document.title = `Moca Consult — ${viewTitles[view] || 'Dashboard'}`;
 
     // Load data for specific views
     if (view === 'notifications') loadNotifications();
     if (view === 'settings') loadSettings();
 }
 
-// ---- NTP Clock ----
+// ---- NTP / Analog Clock ----
 function initNTPClock() {
     fetchNTPTime();
-    setInterval(fetchNTPTime, 10000); // refresh every 10s
+    setInterval(fetchNTPTime, 10000); // refresh network time slowly
+    
+    // Spring-animated ultra sleek Framer analog clock ticker
+    setInterval(tickAnalogClock, 1000);
+    tickAnalogClock();
+}
+
+function tickAnalogClock() {
+    const now = new Date();
+    const sec = now.getSeconds();
+    const min = now.getMinutes();
+    const hr = now.getHours();
+    
+    // Compute exact degrees
+    const secDeg = (sec / 60) * 360;
+    const minDeg = (min / 60) * 360 + (sec / 60) * 6; 
+    const hrDeg = (hr % 12 / 12) * 360 + (min / 60) * 30;
+    
+    const secHand = document.getElementById('secondHand');
+    const minHand = document.getElementById('minuteHand');
+    const hrHand = document.getElementById('hourHand');
+    
+    // Prevent the 59 -> 0 backwards spin transition glitch
+    if (sec === 0 && secHand) secHand.style.transition = 'none';
+    else if (secHand) secHand.style.transition = 'transform 0.05s cubic-bezier(0.4, 2.08, 0.55, 0.44)';
+    
+    if (secHand) secHand.style.transform = `translateX(-50%) rotate(${secDeg}deg)`;
+    if (minHand) minHand.style.transform = `translateX(-50%) rotate(${minDeg}deg)`;
+    if (hrHand) hrHand.style.transform = `translateX(-50%) rotate(${hrDeg}deg)`;
 }
 
 async function fetchNTPTime() {
@@ -173,13 +248,15 @@ async function fetchNTPTime() {
         const dateEl = document.getElementById('ntpDate');
         if (timeEl) timeEl.textContent = data.time || '--:--:--';
         if (dateEl) {
-            dateEl.textContent = `${data.date || ''} · France`;
+            dateEl.textContent = `${data.date || ''} · France (CET)`;
         }
     } catch (e) {
         // Fallback: show local time
         const now = new Date();
         const timeEl = document.getElementById('ntpTime');
+        const dateEl = document.getElementById('ntpDate');
         if (timeEl) timeEl.textContent = now.toLocaleTimeString('fr-FR');
+        if (dateEl) dateEl.textContent = now.toLocaleDateString('fr-FR') + ' · France (Local)';
     }
 }
 
@@ -188,6 +265,10 @@ async function refreshData() {
     try {
         const resp = await fetch('/api/stats');
         const data = await resp.json();
+        if (data.redirect) {
+            window.location.href = data.redirect;
+            return;
+        }
         if (data.status === 'no_data') {
             return;
         }
@@ -207,29 +288,23 @@ async function refreshData() {
 function updateDashboard(data) {
     // Metrics
     animateValue('metricTotal', data.total || 0);
-    animateValue('metricOK', data.total_ok || 0);
-    animateValue('metricNOK', data.total_nok || 0);
+    animateValue('metricOKRacc', data.racc_ok || 0);
+    animateValue('metricOKSav', data.sav_ok || 0);
+    animateValue('metricNOKRacc', data.racc_nok || 0);
+    animateValue('metricNOKSav', data.sav_nok || 0);
 
-    const rate = ((data.rate_ok || 0) * 100);
-    document.getElementById('metricRate').textContent = rate.toFixed(1) + '%';
-    document.getElementById('metricRate').style.color = rate >= 80 ? 'var(--green-400)' : rate >= 60 ? 'var(--amber-400)' : 'var(--red-400)';
+    const rateRacc = ((data.racc_rate || 0) * 100);
+    const rateSav = ((data.sav_rate || 0) * 100);
+    
+    document.getElementById('metricRateRacc').textContent = rateRacc.toFixed(1) + '%';
+    document.getElementById('metricRateRacc').style.color = rateRacc >= 80 ? 'var(--green-400)' : rateRacc >= 60 ? 'var(--amber-400)' : 'var(--red-400)';
+
+    document.getElementById('metricRateSav').textContent = rateSav.toFixed(1) + '%';
+    document.getElementById('metricRateSav').style.color = rateSav >= 80 ? 'var(--green-400)' : rateSav >= 60 ? 'var(--amber-400)' : 'var(--red-400)';
 
     document.getElementById('metricPDC').textContent = data.pdc || 0;
     document.getElementById('metricInProgress').textContent = data.in_progress || 0;
 
-    const rateLabel = document.getElementById('metricRateLabel');
-    if (rate >= 80) {
-        rateLabel.textContent = '✓ Objectif atteint';
-        rateLabel.style.color = 'var(--green-400)';
-    } else {
-        rateLabel.textContent = '⚠ Sous objectif';
-        rateLabel.style.color = 'var(--amber-400)';
-    }
-
-    // Progress bars
-    const total = data.total || 1;
-    document.getElementById('barOK').style.width = ((data.total_ok / total) * 100) + '%';
-    document.getElementById('barNOK').style.width = ((data.total_nok / total) * 100) + '%';
 
     // NOK badge
     document.getElementById('nokBadge').textContent = data.total_nok || 0;
@@ -237,8 +312,14 @@ function updateDashboard(data) {
     // Source file
     const fileTagName = document.getElementById('fileTagName');
     if (data.source_file) {
-        const name = data.source_file.split('/').pop();
-        fileTagName.textContent = name;
+        const name = data.source_file.split(/[\/\\]/).pop();
+        let displayName = name;
+        const match = name.match(/^(\d{4})-(\d{2})-(\d{2})\.xlsx$/);
+        if (match) {
+            const parts = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+            displayName = `${match[3]} ${parts[parseInt(match[2])-1]} ${match[1]}`;
+        }
+        fileTagName.textContent = displayName;
     }
 
     // Donut chart
@@ -268,14 +349,10 @@ function drawDonut(data) {
         ok = data.racc_ok || 0;
         nok = data.racc_nok || 0;
         label = 'RACC';
-    } else if (chartMode === 'sav') {
+    } else {
         ok = data.sav_ok || 0;
         nok = data.sav_nok || 0;
         label = 'SAV';
-    } else {
-        ok = data.total_ok || 0;
-        nok = data.total_nok || 0;
-        label = 'Global';
     }
 
     const total = ok + nok || 1;
@@ -405,9 +482,12 @@ function updateTechBars(data) {
             <span class="tech-bar-name" title="${t.name}">${t.name.split(' ').pop()}</span>
             <div class="tech-bar-track">
                 <div class="tech-bar-ok" data-width="${okW}" style="width:0%;transition:width 0.6s ${delay}s cubic-bezier(0.16,1,0.3,1)"></div>
-                <div class="tech-bar-nok" data-width="${nokW}" style="width:0%;transition:width 0.6s ${(parseFloat(delay)+0.1).toFixed(2)}s cubic-bezier(0.16,1,0.3,1)"></div>
+                <div class="tech-bar-nok" data-width="${nokW}" style="width:0%;transition:width 0.6s ${(parseFloat(delay) + 0.1).toFixed(2)}s cubic-bezier(0.16,1,0.3,1)"></div>
             </div>
-            <span class="tech-bar-value" style="color:${rateColor}">${(t.rate_ok * 100).toFixed(0)}%</span>
+            <div class="tech-bar-stats">
+                <span class="tech-bar-total">${t.total} <span style="font-weight:500; font-size:0.65rem; color:var(--text-tertiary)">int.</span></span>
+                <span class="tech-bar-rate" style="color:${rateColor}">${(t.rate_ok * 100).toFixed(0)}% OK</span>
+            </div>
         </div>`;
     }).join('');
 
@@ -452,12 +532,44 @@ function updateBreakdown(data) {
     });
 }
 
-// ---- NOK Table (Dashboard) ----
+window.nokSortState = { field: null, asc: true };
+
 function updateNOKTable(data) {
     const card = document.getElementById('nokAlertCard');
     const body = document.getElementById('nokTableBody');
-    const count = document.getElementById('nokAlertCount');
-    const noks = data.nok_records || [];
+
+    // Dashboard preview: fix to the latest 15 records, then sort within them
+    let noks = [...(data.nok_records || [])].slice(0, 15);
+    
+    // Sort logic (within the fixed 15)
+    if (window.nokSortState.field) {
+        noks.sort((a, b) => {
+            const field = window.nokSortState.field;
+            let valA = a[field] || '';
+            let valB = b[field] || '';
+            
+            // Special cases
+            if (field === 'dept') {
+                valA = a.department || '';
+                valB = b.department || '';
+            }
+            if (field === 'reference') {
+                valA = a.reference || '';
+                valB = b.reference || '';
+            }
+            if (field === 'tech') {
+                valA = a.tech || '';
+                valB = b.tech || '';
+            }
+            
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
+            
+            if (valA < valB) return window.nokSortState.asc ? -1 : 1;
+            if (valA > valB) return window.nokSortState.asc ? 1 : -1;
+            return 0;
+        });
+    }
 
     if (!noks.length) {
         card.style.display = 'none';
@@ -465,7 +577,6 @@ function updateNOKTable(data) {
     }
 
     card.style.display = 'block';
-    count.textContent = noks.length;
 
     body.innerHTML = noks.map(r => `<tr>
         <td style="color:var(--text-primary);font-weight:500">${esc(r.tech)}</td>
@@ -478,9 +589,33 @@ function updateNOKTable(data) {
     </tr>`).join('');
 }
 
-// ---- Interventions Table ----
+function sortNOKTable(field) {
+    if (window.nokSortState.field === field) {
+        window.nokSortState.asc = !window.nokSortState.asc;
+    } else {
+        window.nokSortState.field = field;
+        window.nokSortState.asc = true;
+    }
+    
+    // Update headers UI
+    document.querySelectorAll('#nokTable th.sortable').forEach(th => {
+        th.classList.remove('active', 'asc', 'desc');
+        if (th.dataset.field === field) {
+            th.classList.add('active', window.nokSortState.asc ? 'asc' : 'desc');
+        }
+    });
+
+    // Refresh table immediately with existing data
+    if (statsData) {
+        updateNOKTable(statsData);
+    }
+}
+
+window.interventionsSortState = { field: null, asc: true };
+window.interventionsCurrentPage = 1;
+const INTERVENTIONS_PER_PAGE = 25;
+
 function updateInterventions(data) {
-    const body = document.getElementById('interventionsBody');
     const records = data.all_records || [];
     renderInterventionTable(records);
 }
@@ -491,7 +626,9 @@ function renderInterventionTable(records) {
     const stateVal = document.getElementById('stateFilter')?.value || '';
     const typeVal = document.getElementById('typeFilter')?.value || '';
 
-    let filtered = records;
+    let filtered = [...records];
+    
+    // 1. Filter
     if (searchVal) {
         filtered = filtered.filter(r =>
             (r.tech || '').toLowerCase().includes(searchVal) ||
@@ -506,9 +643,53 @@ function renderInterventionTable(records) {
         filtered = filtered.filter(r => (r.type || '').toUpperCase() === typeVal);
     }
 
-    document.getElementById('interventionCount').textContent = `${filtered.length} intervention${filtered.length !== 1 ? 's' : ''}`;
+    // 2. Sort
+    const { field, asc } = window.interventionsSortState;
+    if (field) {
+        filtered.sort((a, b) => {
+            let valA = a[field] || '';
+            let valB = b[field] || '';
+            
+            const prepare = v => {
+                if (typeof v !== 'string') return v;
+                if (v.match(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/)) {
+                    const parts = v.split(/[\/ :]/);
+                    return `${parts[2]}-${parts[1]}-${parts[0]} ${parts[3]}:${parts[4]}`;
+                }
+                return v;
+            };
 
-    body.innerHTML = filtered.map(r => {
+            const pA = prepare(valA);
+            const pB = prepare(valB);
+
+            if (typeof pA === 'string' && typeof pB === 'string') {
+                return asc ? pA.localeCompare(pB) : pB.localeCompare(pA);
+            }
+            if (pA < pB) return asc ? -1 : 1;
+            if (pA > pB) return asc ? 1 : -1;
+            return 0;
+        });
+    }
+
+    document.querySelectorAll('th .sort-icon[id^="sort-icon-int-"]').forEach(el => el.innerHTML = '');
+    if (field) {
+        const iconEl = document.getElementById(`sort-icon-int-${field}`);
+        if (iconEl) iconEl.innerHTML = asc ? ' ↑' : ' ↓';
+    }
+
+    // 3. Paginate
+    document.getElementById('interventionCount').textContent = `${filtered.length} intervention${filtered.length !== 1 ? 's' : ''}`;
+    
+    const totalPages = Math.ceil(filtered.length / INTERVENTIONS_PER_PAGE);
+    if (window.interventionsCurrentPage > totalPages && totalPages > 0) {
+        window.interventionsCurrentPage = totalPages;
+    }
+    if (totalPages === 0) window.interventionsCurrentPage = 1;
+
+    const startIdx = (window.interventionsCurrentPage - 1) * INTERVENTIONS_PER_PAGE;
+    const paginated = filtered.slice(startIdx, startIdx + INTERVENTIONS_PER_PAGE);
+
+    body.innerHTML = paginated.map(r => {
         const stateClass = (r.state || '').toUpperCase() === 'OK' ? 'ok' : (r.state || '').toUpperCase() === 'NOK' ? 'nok' : 'en-cours';
         return `<tr>
             <td style="font-family:monospace;font-size:0.78rem">${esc(r.reference)}</td>
@@ -524,47 +705,196 @@ function renderInterventionTable(records) {
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis" title="${esc(r.fail_code)}">${esc(r.fail_code || '—')}</td>
         </tr>`;
     }).join('');
+
+    renderInterventionsPagination(totalPages);
 }
+
+function renderInterventionsPagination(totalPages) {
+    const container = document.getElementById('interventionsPagination');
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let current = window.interventionsCurrentPage;
+    let html = `<span class="page-info">Page ${current} / ${totalPages}</span>`;
+    
+    html += `<button class="page-btn" ${current === 1 ? 'disabled' : ''} onclick="setInterventionsPage(${current - 1})">⟨</button>`;
+    
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= current - 2 && i <= current + 2)) {
+            html += `<button class="page-btn ${current === i ? 'active' : ''}" onclick="setInterventionsPage(${i})">${i}</button>`;
+        } else if (i === current - 3 || i === current + 3) {
+            html += `<span class="page-ellipsis">…</span>`;
+        }
+    }
+    
+    html += `<button class="page-btn" ${current === totalPages ? 'disabled' : ''} onclick="setInterventionsPage(${current + 1})">⟩</button>`;
+    
+    container.innerHTML = html;
+}
+
+window.setInterventionsPage = function(page) {
+    window.interventionsCurrentPage = page;
+    if (statsData) renderInterventionTable(statsData.all_records || []);
+};
+
+window.sortInterventions = function(field) {
+    if (window.interventionsSortState.field === field) {
+        window.interventionsSortState.asc = !window.interventionsSortState.asc;
+    } else {
+        window.interventionsSortState.field = field;
+        window.interventionsSortState.asc = true;
+    }
+    window.interventionsCurrentPage = 1;
+    if (statsData) renderInterventionTable(statsData.all_records || []);
+};
 
 function initFilters() {
     ['interventionSearch', 'stateFilter', 'typeFilter'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.addEventListener('input', () => {
+            const handler = () => {
+                window.interventionsCurrentPage = 1;
                 if (statsData) renderInterventionTable(statsData.all_records || []);
-            });
-            el.addEventListener('change', () => {
-                if (statsData) renderInterventionTable(statsData.all_records || []);
-            });
+            };
+            if (id === 'interventionSearch') {
+                el.addEventListener('input', handler);
+            } else {
+                el.addEventListener('change', handler);
+            }
         }
     });
 
-    // Tech sort
+    // Tech sort & search
     const techSort = document.getElementById('techSort');
     if (techSort) {
         techSort.addEventListener('change', () => {
+            techPage = 1;
+            if (statsData) updateTechnicians(statsData);
+        });
+    }
+    const techSearch = document.getElementById('techSearch');
+    if (techSearch) {
+        techSearch.addEventListener('input', () => {
+            techPage = 1;
             if (statsData) updateTechnicians(statsData);
         });
     }
 }
 
+// ---- Pagination Utility ----
+const TECH_PER_PAGE = 12;
+const TECH_CONFIG_PER_PAGE = 15;
+let techPage = 1;
+let techConfigPage = 1;
+
+function renderPagination(containerId, currentPage, totalPages, totalItems, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+    let html = '';
+    // Prev
+    html += `<button class="page-btn" ${currentPage <= 1 ? 'disabled' : ''} onclick="${onPageChange}(${currentPage - 1})">&laquo;</button>`;
+
+    // Page numbers with ellipsis
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+    if (startPage > 1) {
+        html += `<button class="page-btn" onclick="${onPageChange}(1)">1</button>`;
+        if (startPage > 2) html += `<span class="page-ellipsis">&hellip;</span>`;
+    }
+    for (let p = startPage; p <= endPage; p++) {
+        html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="${onPageChange}(${p})">${p}</button>`;
+    }
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) html += `<span class="page-ellipsis">&hellip;</span>`;
+        html += `<button class="page-btn" onclick="${onPageChange}(${totalPages})">${totalPages}</button>`;
+    }
+
+    // Next
+    html += `<button class="page-btn" ${currentPage >= totalPages ? 'disabled' : ''} onclick="${onPageChange}(${currentPage + 1})">&raquo;</button>`;
+
+    // Info
+    const from = (currentPage - 1) * (containerId.includes('Config') ? TECH_CONFIG_PER_PAGE : TECH_PER_PAGE) + 1;
+    const perPage = containerId.includes('Config') ? TECH_CONFIG_PER_PAGE : TECH_PER_PAGE;
+    const to = Math.min(currentPage * perPage, totalItems);
+    html += `<span class="page-info">${from}–${to} sur ${totalItems}</span>`;
+
+    container.innerHTML = html;
+}
+
+function goTechPage(page) {
+    techPage = page;
+    if (statsData) updateTechnicians(statsData);
+}
+
+function goTechConfigPage(page) {
+    techConfigPage = page;
+    applyTechConfigPagination();
+}
+
 // ---- Technicians View ----
+function buildTypeSection(label, ok, nok, okColor, nokColor) {
+    const total = ok + nok;
+    const rate = total > 0 ? (ok / total * 100) : 0;
+    const okPct = total > 0 ? (ok / total * 100).toFixed(1) : '0';
+    const nokPct = total > 0 ? (nok / total * 100).toFixed(1) : '0';
+    const rateBadgeClass = rate >= 80 ? 'rate-good' : rate >= 60 ? 'rate-mid' : 'rate-low';
+    const isRacc = label === 'RACC';
+    const labelClass = isRacc ? 'type-racc' : 'type-sav';
+
+    return `<div class="tech-type-section">
+        <div class="tech-type-header">
+            <span class="tech-type-badge ${labelClass}">${label}</span>
+            <span class="tech-type-rate ${rateBadgeClass}">${total > 0 ? rate.toFixed(0) + '%' : '—'}</span>
+        </div>
+        <div class="tech-type-counts">
+            <span class="tech-type-ok">✓ ${ok}</span>
+            <span class="tech-type-nok">✗ ${nok}</span>
+            <span class="tech-type-total">${total}</span>
+        </div>
+        <div class="tech-type-bar">
+            <div class="tech-type-bar-ok" style="width:${okPct}%;background:${okColor}"></div>
+            <div class="tech-type-bar-nok" style="width:${nokPct}%;background:${nokColor}"></div>
+        </div>
+    </div>`;
+}
+
 function updateTechnicians(data) {
     const container = document.getElementById('techGrid');
     let techs = (data.by_technician || []).slice();
-    const sortVal = document.getElementById('techSort')?.value || 'nok';
+    const sortVal = document.getElementById('techSort')?.value || 'racc_nok';
+    const searchVal = (document.getElementById('techSearch')?.value || '').toLowerCase().trim();
+
+    // Filter by search query
+    if (searchVal) {
+        techs = techs.filter(t => (t.name || '').toLowerCase().includes(searchVal) || (t.sector || '').toLowerCase().includes(searchVal));
+    }
 
     switch (sortVal) {
-        case 'nok': techs.sort((a, b) => b.nok - a.nok); break;
-        case 'ok': techs.sort((a, b) => b.ok - a.ok); break;
-        case 'rate': techs.sort((a, b) => a.rate_ok - b.rate_ok); break;
+        case 'racc_nok': techs.sort((a, b) => (b.racc_nok || 0) - (a.racc_nok || 0)); break;
+        case 'sav_nok':  techs.sort((a, b) => (b.sav_nok || 0) - (a.sav_nok || 0)); break;
+        case 'racc_ok':  techs.sort((a, b) => (b.racc_ok || 0) - (a.racc_ok || 0)); break;
+        case 'sav_ok':   techs.sort((a, b) => (b.sav_ok || 0) - (a.sav_ok || 0)); break;
         case 'name': techs.sort((a, b) => a.name.localeCompare(b.name)); break;
     }
 
     if (!techs.length) {
         container.innerHTML = '<div class="empty-state">Aucune donnée technicien</div>';
+        document.getElementById('techPagination').innerHTML = '';
         return;
     }
+
+    // Pagination
+    const totalPages = Math.ceil(techs.length / TECH_PER_PAGE);
+    if (techPage > totalPages) techPage = totalPages;
+    const startIdx = (techPage - 1) * TECH_PER_PAGE;
+    const pageTechs = techs.slice(startIdx, startIdx + TECH_PER_PAGE);
 
     const avatarColors = [
         ['#1d4ed8', '#dbeafe'], ['#7c3aed', '#ede9fe'], ['#059669', '#d1fae5'],
@@ -572,49 +902,24 @@ function updateTechnicians(data) {
         ['#c026d3', '#fae8ff'], ['#4338ca', '#e0e7ff']
     ];
 
-    container.innerHTML = techs.map((t, i) => {
+    container.innerHTML = pageTechs.map((t, i) => {
+        const globalIdx = startIdx + i;
         const initials = t.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-        const [bg, fg] = avatarColors[i % avatarColors.length];
-        const rate = (t.rate_ok * 100);
-        const rateColor = rate >= 80 ? 'var(--green-400)' : rate >= 60 ? 'var(--amber-400)' : 'var(--red-400)';
-        const total = t.total || 1;
+        const [bg, fg] = avatarColors[globalIdx % avatarColors.length];
 
         return `<div class="tech-card">
             <div class="tech-card-header">
                 <div class="tech-avatar" style="background:${bg};color:${fg}">${initials}</div>
-                <div>
-                    <div class="tech-card-name">${esc(t.name)}</div>
-                    <div class="tech-card-sector">Secteur ${esc(t.sector)}</div>
-                </div>
-                <div class="tech-card-rate">
-                    <div class="tech-card-rate-value" style="color:${rateColor}">${rate.toFixed(0)}%</div>
-                    <div class="tech-card-rate-label">Taux OK</div>
-                </div>
+                <div class="tech-card-name">${esc(t.name)}</div>
             </div>
-            <div class="tech-card-stats">
-                <div class="tech-stat">
-                    <div class="tech-stat-label">OK</div>
-                    <div class="tech-stat-value green">${t.ok}</div>
-                </div>
-                <div class="tech-stat">
-                    <div class="tech-stat-label">NOK</div>
-                    <div class="tech-stat-value red">${t.nok}</div>
-                </div>
-                <div class="tech-stat">
-                    <div class="tech-stat-label">RACC</div>
-                    <div class="tech-stat-value">${t.racc_ok + t.racc_nok}</div>
-                </div>
-                <div class="tech-stat">
-                    <div class="tech-stat-label">SAV</div>
-                    <div class="tech-stat-value">${t.sav_ok + t.sav_nok}</div>
-                </div>
-            </div>
-            <div class="tech-card-bar">
-                <div class="tech-card-bar-ok" style="width:${(t.ok/total*100).toFixed(1)}%"></div>
-                <div class="tech-card-bar-nok" style="width:${(t.nok/total*100).toFixed(1)}%"></div>
+            <div class="tech-card-type-sections">
+                ${buildTypeSection('RACC', t.racc_ok || 0, t.racc_nok || 0, 'var(--green-400)', 'var(--red-400)')}
+                ${buildTypeSection('SAV', t.sav_ok || 0, t.sav_nok || 0, 'var(--blue-400)', 'var(--red-400)')}
             </div>
         </div>`;
     }).join('');
+
+    renderPagination('techPagination', techPage, totalPages, techs.length, 'goTechPage');
 }
 
 // ---- GANTT View ----
@@ -669,7 +974,7 @@ function updateFailures(data) {
     catContainer.innerHTML = cats.length ? cats.map(([label, count]) => `
         <div class="failure-bar-row">
             <div class="failure-bar-label"><span>${esc(label)}</span><span>${count}</span></div>
-            <div class="failure-bar-track"><div class="failure-bar-fill" style="width:${(count/maxCat*100).toFixed(1)}%"></div></div>
+            <div class="failure-bar-track"><div class="failure-bar-fill" style="width:${(count / maxCat * 100).toFixed(1)}%"></div></div>
         </div>
     `).join('') : '<div class="empty-state small">Aucune donnée</div>';
 
@@ -681,13 +986,58 @@ function updateFailures(data) {
     typeContainer.innerHTML = types.length ? types.map(([label, count]) => `
         <div class="failure-bar-row">
             <div class="failure-bar-label"><span>${esc(label)}</span><span>${count}</span></div>
-            <div class="failure-bar-track"><div class="failure-bar-fill" style="width:${(count/maxType*100).toFixed(1)}%"></div></div>
+            <div class="failure-bar-track"><div class="failure-bar-fill" style="width:${(count / maxType * 100).toFixed(1)}%"></div></div>
         </div>
     `).join('') : '<div class="empty-state small">Aucune donnée</div>';
 
-    // Detailed table
+    // Init sorting state if necessary 
+    if (!window.failureSortState) {
+        window.failureSortState = { field: null, asc: true };
+    }
+    window.allNokRecords = data.nok_records || [];
+    renderFailureTable();
+}
+
+function renderFailureTable() {
     const failBody = document.getElementById('failureBody');
-    const noks = data.nok_records || [];
+    let noks = [...(window.allNokRecords || [])];
+    const { field, asc } = window.failureSortState;
+
+    if (field) {
+        noks.sort((a, b) => {
+            let valA = a[field] || '';
+            let valB = b[field] || '';
+            
+            // Format converter helper for sorting purposes
+            const prepare = v => {
+                if (typeof v !== 'string') return v;
+                // Handle DD/MM/YYYY HH:MM -> YYYY-MM-DD HH:MM
+                if (v.match(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/)) {
+                    const parts = v.split(/[\/ :]/);
+                    return `${parts[2]}-${parts[1]}-${parts[0]} ${parts[3]}:${parts[4]}`;
+                }
+                return v;
+            };
+
+            const pA = prepare(valA);
+            const pB = prepare(valB);
+
+            if (typeof pA === 'string' && typeof pB === 'string') {
+                return asc ? pA.localeCompare(pB) : pB.localeCompare(pA);
+            }
+            if (pA < pB) return asc ? -1 : 1;
+            if (pA > pB) return asc ? 1 : -1;
+            return 0;
+        });
+    }
+
+    // Update icons
+    document.querySelectorAll('.sort-icon').forEach(el => el.innerHTML = '');
+    if (field) {
+        const iconEl = document.getElementById(`sort-icon-${field}`);
+        if (iconEl) iconEl.innerHTML = asc ? ' ↑' : ' ↓';
+    }
+
     failBody.innerHTML = noks.map(r => `<tr>
         <td style="color:var(--text-primary);font-weight:500">${esc(r.tech)}</td>
         <td><span class="state-badge nok">${esc(r.type)}</span></td>
@@ -700,6 +1050,18 @@ function updateFailures(data) {
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis" title="${esc(r.reason)}">${esc(r.reason)}</td>
         <td>${esc(r.category || '—')}</td>
     </tr>`).join('');
+}
+
+window.sortFailures = function(field) {
+    if (!window.failureSortState) window.failureSortState = { field: null, asc: true };
+    
+    if (window.failureSortState.field === field) {
+        window.failureSortState.asc = !window.failureSortState.asc;
+    } else {
+        window.failureSortState.field = field;
+        window.failureSortState.asc = true;
+    }
+    renderFailureTable();
 }
 
 // ---- Notifications ----
@@ -719,36 +1081,149 @@ function renderNotifications() {
         return;
     }
 
-    container.innerHTML = notifications.map(n => {
-        const icons = { stats: '📊', nok_alert: '🚨', morning: '🌅' };
-        const icon = icons[n.type] || '📨';
+    // Count stats
+    const successCount = notifications.filter(n => n.success).length;
+    const errorCount = notifications.filter(n => !n.success && n.type !== 'warning').length;
+    const warningCount = notifications.filter(n => n.type === 'warning').length;
+
+    // Type labels
+    const typeLabels = {
+        stats: 'Statistiques',
+        morning: 'Bonjour',
+        eod_thanks: 'Remerciement',
+        eod_report: 'Rapport fin de journée',
+        nok_alert: 'Alerte NOK',
+        warning: 'Avertissement'
+    };
+
+    // Icon map
+    const typeIcons = {
+        stats: '📊',
+        morning: '🌅',
+        eod_thanks: '🙏',
+        eod_report: '📋',
+        nok_alert: '🚨',
+        warning: '⚠️'
+    };
+
+    // Summary bar
+    let summaryHtml = `<div class="notif-summary">
+        <span>${notifications.length} notification${notifications.length > 1 ? 's' : ''}</span>
+        <span class="notif-summary-stat success">✓ ${successCount} envoyé${successCount > 1 ? 's' : ''}</span>
+        ${errorCount > 0 ? `<span class="notif-summary-stat error">✗ ${errorCount} échec${errorCount > 1 ? 's' : ''}</span>` : ''}
+        ${warningCount > 0 ? `<span class="notif-summary-stat warning">⚠ ${warningCount} avert.</span>` : ''}
+    </div>`;
+
+    let itemsHtml = notifications.map(n => {
+        const isWarning = n.type === 'warning';
+        const isError = !n.success && !isWarning;
+        const isSuccess = n.success;
+
+        // Determine CSS class
+        let itemClass = 'notif-success';
+        if (isError) itemClass = 'notif-error';
+        if (isWarning) itemClass = 'notif-warning';
+
+        // Icon
+        let iconClass = n.type;
+        let icon = typeIcons[n.type] || '📨';
+        if (isError) { icon = '❌'; iconClass = 'notif-icon-error'; }
+
+        // Status badge
+        let badge = '<span class="notif-status-badge success">Envoyé</span>';
+        if (isError) badge = '<span class="notif-status-badge error">Échec</span>';
+        if (isWarning) badge = '<span class="notif-status-badge warning">Attention</span>';
+
+        // Label
+        const label = typeLabels[n.type] || n.type;
+
+        // Time
         const ts = new Date(n.timestamp).toLocaleString('fr-FR');
 
-        return `<div class="notif-item">
-            <div class="notif-icon ${n.type}">${icon}</div>
+        // Body content
+        let bodyContent = '';
+        if (isWarning) {
+            bodyContent = `<div class="notif-warning-msg">${esc(n.message)}</div>`;
+        } else if (isError) {
+            bodyContent = `<div class="notif-error-msg">${esc(n.message)}</div>`;
+        } else {
+            bodyContent = `<div class="notif-msg">${esc(n.message)}</div>`;
+        }
+
+        return `<div class="notif-item ${itemClass}">
+            <div class="notif-icon ${esc(iconClass)}">${icon}</div>
             <div class="notif-body">
-                <div class="notif-type">${esc(n.type)} → ${esc(n.recipient)}</div>
-                <div class="notif-msg">${esc(n.message)}</div>
+                <div class="notif-type">
+                    ${esc(label)} → ${esc(n.recipient)}
+                    ${badge}
+                </div>
+                ${bodyContent}
             </div>
             <div class="notif-time">${ts}</div>
+            <button class="notif-delete-btn" onclick="clearNotification(${n.id})" title="Supprimer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
         </div>`;
     }).join('');
+
+    container.innerHTML = summaryHtml + itemsHtml;
 }
+
+async function clearNotification(id) {
+    try {
+        await fetch('/api/notifications?id=' + id, { method: 'DELETE' });
+        loadNotifications();
+    } catch(e) { console.error(e); }
+}
+
+async function clearAllNotifications() {
+    if(!await showConfirm('Tout supprimer', 'Voulez-vous vraiment effacer tout l\'historique des notifications ?')) return;
+    try {
+        await fetch('/api/notifications', { method: 'DELETE' });
+        loadNotifications();
+    } catch(e) { console.error(e); }
+}
+
 
 // ---- Settings ----
 let currentConfig = null;
 
 async function loadSettings() {
     try {
-        const resp = await fetch('/api/config');
+        const resp = await fetch('/api/config', { cache: 'no-store' });
         currentConfig = await resp.json();
 
         document.getElementById('settingsMyNumber').value = currentConfig.MY_NUMBER || '';
-        document.getElementById('settingsWatchFolder').value = currentConfig.WATCH_FOLDER || '';
-        document.getElementById('settingsHour').value = currentConfig.MORNING_HOUR || 8;
-        document.getElementById('settingsInterval').value = currentConfig.STATS_INTERVAL_HOURS || 2;
-        document.getElementById('settingsEODHour').value = currentConfig.EOD_HOUR || 17;
+        // Time pickers: convert hour+minute to HH:MM format
+        const mh = String(currentConfig.MORNING_HOUR || 8).padStart(2, '0');
+        const mm = String(currentConfig.MORNING_MINUTE || 0).padStart(2, '0');
+        document.getElementById('settingsMorningTime').value = mh + ':' + mm;
+        const ih = String(currentConfig.STATS_INTERVAL_HOURS || 2).padStart(2, '0');
+        const im = String(currentConfig.STATS_INTERVAL_MINUTES || 0).padStart(2, '0');
+        document.getElementById('settingsInterval').value = ih + ':' + im;
+        const eh = String(currentConfig.EOD_HOUR || 17).padStart(2, '0');
+        const em = String(currentConfig.EOD_MINUTE || 0).padStart(2, '0');
+        document.getElementById('settingsEODTime').value = eh + ':' + em;
         document.getElementById('settingsWhatsApp').checked = currentConfig.WHATSAPP_ENABLED || false;
+
+        // Message templates
+        document.getElementById('settingsMsgTest').value = currentConfig.MSG_TEST || '';
+        document.getElementById('settingsMsgMorning').value = currentConfig.MSG_MORNING || '';
+        document.getElementById('settingsMsgEODThanks').value = currentConfig.MSG_EOD_THANKS || '';
+        document.getElementById('settingsMsgLateStart').value = currentConfig.MSG_LATE_START || '';
+
+        // SMTP
+        document.getElementById('settingsSMTPHost').value = currentConfig.SMTP_HOST || '';
+        document.getElementById('settingsSMTPPort').value = currentConfig.SMTP_PORT || 587;
+        document.getElementById('settingsSMTPUsername').value = currentConfig.SMTP_USERNAME || '';
+        document.getElementById('settingsSMTPPassword').value = currentConfig.SMTP_PASSWORD || '';
+        document.getElementById('settingsSMTPFrom').value = currentConfig.SMTP_FROM || '';
+
+        // Google Drive
+        loadDriveStatus();
+
+        // Load SMTP config from Zitadel (overrides local values)
+        loadZitadelSMTPStatus();
 
         // Build editable tech table
         const body = document.getElementById('techConfigBody');
@@ -756,14 +1231,37 @@ async function loadSettings() {
         const entries = Object.entries(techs);
 
         if (!entries.length) {
-            body.innerHTML = '<tr><td colspan="3" class="empty-state small">Aucun technicien — cliquez "Ajouter"</td></tr>';
+            body.innerHTML = '<tr><td colspan="4" class="empty-state small">Aucun technicien — cliquez "Ajouter"</td></tr>';
         } else {
-            body.innerHTML = entries.map(([name, num], i) => `
+            body.innerHTML = entries.map(([name, num], i) => {
+                // Try to split the name into Nom and Prenom based on the first space
+                const parts = name.trim().split(' ');
+                const nom = parts[0] || '';
+                const prenom = parts.length > 1 ? parts.slice(1).join(' ') : '';
+                return `
                 <tr data-idx="${i}">
-                    <td><input type="text" class="inline-input tech-name-input" value="${esc(name)}" placeholder="NOM Prénom"></td>
-                    <td><input type="tel" class="inline-input tech-num-input" value="${esc(num)}" placeholder="+33612345678"></td>
-                    <td style="text-align:center">
-                        <button class="btn-delete" onclick="removeTechRow(this)" title="Supprimer">
+                    <td><input type="text" class="inline-input tech-nom-input" value="${esc(nom)}" placeholder="Nom" disabled style="opacity:0.7;cursor:not-allowed"></td>
+                    <td><input type="text" class="inline-input tech-prenom-input" value="${esc(prenom)}" placeholder="Prénom" disabled style="opacity:0.7;cursor:not-allowed"></td>
+                    <td><input type="tel" class="inline-input tech-num-input" value="${esc(num)}" placeholder="Numéro WhatsApp" disabled style="opacity:0.7;cursor:not-allowed"></td>
+                    <td style="text-align:center; display:flex; justify-content:center; gap:8px;">
+                        <button class="btn-icon btn-edit-tech" onclick="editTechRow(this)" title="Éditer" style="background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:4px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-save-tech" onclick="saveTechRow(this)" title="Sauvegarder" style="display:none;background:none;border:none;color:var(--green-400);cursor:pointer;padding:4px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-cancel-tech" onclick="cancelTechRow(this)" title="Annuler" style="display:none;background:none;border:none;color:var(--red-400);cursor:pointer;padding:4px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                        <button class="btn-delete" onclick="removeTechRow(this)" title="Supprimer" style="cursor:pointer;padding:4px;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="3 6 5 6 21 6"/>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -771,31 +1269,47 @@ async function loadSettings() {
                         </button>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
-        updateTechCount();
+        applyTechConfigPagination();
 
         // Check WhatsApp connection status
         checkWAStatus();
+
+        if (typeof snapshotAllValues === 'function') {
+            snapshotAllValues();
+            initChangeTracking();
+        }
+
+        if (typeof initFluxTimePickers === 'function') {
+            initFluxTimePickers();
+            syncFluxTimePickers();
+        }
     } catch (e) {
         console.error('Load settings error:', e);
         showToast('Erreur lors du chargement des paramètres', 'error');
     }
 }
 
-async function saveSettings() {
-    const btn = document.getElementById('saveSettingsBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Sauvegarde...';
+async function saveSettings(quiet = false, btn = null) {
+    const targetBtn = btn || document.getElementById('saveSettingsBtn');
+    let originalText = '';
+    if (targetBtn) {
+        originalText = targetBtn.innerHTML;
+        targetBtn.disabled = true;
+        targetBtn.innerHTML = '<span class="spinner"></span> Sauvegarde...';
+    }
 
     try {
         // Gather technicians from the table
         const techs = {};
         const rows = document.querySelectorAll('#techConfigBody tr[data-idx]');
         rows.forEach(row => {
-            const name = row.querySelector('.tech-name-input')?.value.trim();
-            const num = row.querySelector('.tech-num-input')?.value.trim();
-            if (name && num) {
+            const nom = row.querySelector('.tech-nom-input')?.value.trim() || '';
+            const prenom = row.querySelector('.tech-prenom-input')?.value.trim() || '';
+            const name = (nom + ' ' + prenom).trim();
+            const num = row.querySelector('.tech-num-input')?.value.trim() || '';
+            if (name) {
                 techs[name] = num;
             }
         });
@@ -803,16 +1317,36 @@ async function saveSettings() {
         const cfg = {
             TECHNICIENS: techs,
             MY_NUMBER: document.getElementById('settingsMyNumber').value.trim(),
-            WATCH_FOLDER: document.getElementById('settingsWatchFolder').value.trim(),
+            WATCH_FOLDER: currentConfig?.WATCH_FOLDER || '/home/hus/Downloads',
             EXCEL_PATTERN: currentConfig?.EXCEL_PATTERN || '*.xlsx',
-            MORNING_HOUR: parseInt(document.getElementById('settingsHour').value) || 8,
-            MORNING_MINUTE: currentConfig?.MORNING_MINUTE || 0,
-            STATS_INTERVAL_HOURS: parseInt(document.getElementById('settingsInterval').value) || 2,
-            EOD_HOUR: parseInt(document.getElementById('settingsEODHour').value) || 17,
+            MORNING_HOUR: (() => { const t = document.getElementById('settingsMorningTime').value.split(':'); return parseInt(t[0]) || 8; })(),
+            MORNING_MINUTE: (() => { const t = document.getElementById('settingsMorningTime').value.split(':'); return parseInt(t[1]) || 0; })(),
+            STATS_INTERVAL_HOURS: (() => { const t = document.getElementById('settingsInterval').value.split(':'); return parseInt(t[0]) || 2; })(),
+            STATS_INTERVAL_MINUTES: (() => { const t = document.getElementById('settingsInterval').value.split(':'); return parseInt(t[1]) || 0; })(),
+            EOD_HOUR: (() => { const t = document.getElementById('settingsEODTime').value.split(':'); return parseInt(t[0]) || 17; })(),
+            EOD_MINUTE: (() => { const t = document.getElementById('settingsEODTime').value.split(':'); return parseInt(t[1]) || 0; })(),
             FRANCE_TZ: currentConfig?.FRANCE_TZ || 'Europe/Paris',
             NTP_SERVER: currentConfig?.NTP_SERVER || 'fr.pool.ntp.org',
-            WEB_PORT: currentConfig?.WEB_PORT || 8080,
-            WHATSAPP_ENABLED: document.getElementById('settingsWhatsApp').checked
+            WEB_PORT: currentConfig?.WEB_PORT || 9510,
+            WHATSAPP_ENABLED: document.getElementById('settingsWhatsApp').checked,
+            MSG_TEST: document.getElementById('settingsMsgTest').value.trim(),
+            MSG_MORNING: document.getElementById('settingsMsgMorning').value.trim(),
+            MSG_EOD_THANKS: document.getElementById('settingsMsgEODThanks').value.trim(),
+            MSG_LATE_START: document.getElementById('settingsMsgLateStart').value.trim(),
+            // SMTP
+            SMTP_HOST: document.getElementById('settingsSMTPHost').value.trim(),
+            SMTP_PORT: parseInt(document.getElementById('settingsSMTPPort').value) || 587,
+            SMTP_USERNAME: document.getElementById('settingsSMTPUsername').value.trim(),
+            SMTP_PASSWORD: document.getElementById('settingsSMTPPassword').value.trim(),
+            SMTP_FROM: document.getElementById('settingsSMTPFrom').value.trim(),
+            // Google Drive (preserved from config)
+            GDRIVE_FOLDER_ID: currentConfig?.GDRIVE_FOLDER_ID || '',
+            GDRIVE_FOLDER_NAME: currentConfig?.GDRIVE_FOLDER_NAME || '',
+            GDRIVE_ENABLED: currentConfig?.GDRIVE_ENABLED || false,
+            GDRIVE_SYNC_MINUTES: currentConfig?.GDRIVE_SYNC_MINUTES || 5,
+            // Auth (preserve)
+            ADMIN_EMAIL: currentConfig?.ADMIN_EMAIL || '',
+            ADMIN_PASSWORD: ''
         };
 
         const resp = await fetch('/api/config', {
@@ -823,22 +1357,31 @@ async function saveSettings() {
 
         const result = await resp.json();
         if (result.status === 'saved') {
-            showToast('✅ Paramètres sauvegardés !', 'success');
-            currentConfig = cfg;
+            if (!quiet) showToast('✅ Paramètres sauvegardés !', 'success');
+            // Reload from server so currentConfig always reflects the true persisted state
+            // (includes OIDC / Zitadel fields not managed by this form)
+            try {
+                const refreshResp = await fetch('/api/config', { cache: 'no-store' });
+                currentConfig = await refreshResp.json();
+            } catch (_) {
+                currentConfig = cfg; // fallback to local copy if refresh fails
+            }
         } else {
-            showToast('Erreur: ' + (result.error || 'inconnue'), 'error');
+            if (!quiet) showToast('Erreur: ' + (result.error || 'inconnue'), 'error');
+            if (quiet) throw new Error(result.error);
         }
     } catch (e) {
         console.error('Save error:', e);
         showToast('Erreur réseau lors de la sauvegarde', 'error');
     }
 
-    btn.disabled = false;
-    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-        <polyline points="17 21 17 13 7 13 7 21"/>
-        <polyline points="7 3 7 8 15 8"/>
-    </svg> Sauvegarder`;
+    if (targetBtn) {
+        targetBtn.innerHTML = originalText;
+    }
+
+    if (typeof snapshotAllValues === 'function') {
+        snapshotAllValues();
+    }
 }
 
 function addTechRow() {
@@ -851,10 +1394,28 @@ function addTechRow() {
     const tr = document.createElement('tr');
     tr.dataset.idx = idx;
     tr.innerHTML = `
-        <td><input type="text" class="inline-input tech-name-input" value="" placeholder="NOM Prénom" autofocus></td>
-        <td><input type="tel" class="inline-input tech-num-input" value="" placeholder="+33612345678"></td>
-        <td style="text-align:center">
-            <button class="btn-delete" onclick="removeTechRow(this)" title="Supprimer">
+        <td><input type="text" class="inline-input tech-nom-input" value="" placeholder="Nom" autofocus></td>
+        <td><input type="text" class="inline-input tech-prenom-input" value="" placeholder="Prénom"></td>
+        <td><input type="tel" class="inline-input tech-num-input" value="" placeholder="Numéro WhatsApp"></td>
+        <td style="text-align:center; display:flex; justify-content:center; gap:8px;">
+            <button class="btn-icon btn-edit-tech" onclick="editTechRow(this)" title="Éditer" style="display:none;background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            </button>
+            <button class="btn-icon btn-save-tech" onclick="saveTechRow(this)" title="Sauvegarder" style="background:none;border:none;color:var(--green-400);cursor:pointer;padding:4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </button>
+            <button class="btn-icon btn-cancel-tech" onclick="cancelTechRow(this)" title="Annuler" style="background:none;border:none;color:var(--red-400);cursor:pointer;padding:4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <button class="btn-delete" onclick="removeTechRow(this)" title="Supprimer" style="padding:4px;cursor:pointer;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -863,12 +1424,103 @@ function addTechRow() {
         </td>
     `;
     body.appendChild(tr);
-    tr.querySelector('.tech-name-input').focus();
+    tr.querySelector('.tech-nom-input').focus();
     updateTechCount();
     tr.style.animation = 'fadeIn 0.25s ease';
 }
 
-function removeTechRow(btn) {
+async function editTechRow(btn) {
+    const row = btn.closest('tr');
+    const inputs = row.querySelectorAll('.inline-input');
+    
+    // Store original values so we can cancel
+    if (!row.hasAttribute('data-original-nom')) {
+        row.setAttribute('data-original-nom', inputs[0].value);
+        row.setAttribute('data-original-prenom', inputs[1].value);
+        row.setAttribute('data-original-num', inputs[2].value);
+    }
+    
+    // Enable inputs
+    inputs.forEach(input => {
+        input.disabled = false;
+        input.style.opacity = '1';
+        input.style.cursor = 'text';
+    });
+    
+    row.querySelector('.btn-edit-tech').style.display = 'none';
+    row.querySelector('.btn-save-tech').style.display = 'inline-block';
+    row.querySelector('.btn-cancel-tech').style.display = 'inline-block';
+    
+    inputs[0].focus();
+}
+
+async function saveTechRow(btn) {
+    const row = btn.closest('tr');
+    const inputs = row.querySelectorAll('.inline-input');
+    
+    let valid = true;
+    if(!inputs[0].value.trim()) valid = false;
+    
+    if(!valid) {
+        const ok = await showConfirm("Supprimer ?", "Le nom est vide, voulez-vous supprimer la ligne ?");
+        if(ok) {
+            row.remove();
+            updateTechCount();
+            return;
+        } else {
+            return; // Stay in edit mode
+        }
+    }
+    
+    // Lock it
+    inputs.forEach(input => {
+        input.disabled = true;
+        input.style.opacity = '0.7';
+        input.style.cursor = 'not-allowed';
+    });
+    
+    // Update originals
+    row.setAttribute('data-original-nom', inputs[0].value);
+    row.setAttribute('data-original-prenom', inputs[1].value);
+    row.setAttribute('data-original-num', inputs[2].value);
+    
+    row.querySelector('.btn-edit-tech').style.display = 'inline-block';
+    row.querySelector('.btn-save-tech').style.display = 'none';
+    row.querySelector('.btn-cancel-tech').style.display = 'none';
+    
+    saveSettings(true);
+}
+
+function cancelTechRow(btn) {
+    const row = btn.closest('tr');
+    const inputs = row.querySelectorAll('.inline-input');
+    
+    // Revert to original values
+    if (row.hasAttribute('data-original-nom')) {
+        inputs[0].value = row.getAttribute('data-original-nom');
+        inputs[1].value = row.getAttribute('data-original-prenom');
+        inputs[2].value = row.getAttribute('data-original-num');
+        
+        // Lock it
+        inputs.forEach(input => {
+            input.disabled = true;
+            input.style.opacity = '0.7';
+            input.style.cursor = 'not-allowed';
+        });
+        
+        row.querySelector('.btn-edit-tech').style.display = 'inline-block';
+        row.querySelector('.btn-save-tech').style.display = 'none';
+        row.querySelector('.btn-cancel-tech').style.display = 'none';
+    } else {
+        // If it was a newly added row without originals, just remove it
+        row.remove();
+        updateTechCount();
+    }
+}
+
+async function removeTechRow(btn) {
+    const ok = await showConfirm("⚠️ Attention", "Voulez-vous vraiment supprimer ce technicien ?");
+    if (!ok) return;
     const row = btn.closest('tr');
     row.style.opacity = '0';
     row.style.transform = 'translateX(20px)';
@@ -876,10 +1528,11 @@ function removeTechRow(btn) {
     setTimeout(() => {
         row.remove();
         updateTechCount();
+        saveSettings(true);
         // Show empty state if no rows left
         const body = document.getElementById('techConfigBody');
         if (!body.querySelectorAll('tr[data-idx]').length) {
-            body.innerHTML = '<tr><td colspan="3" class="empty-state small">Aucun technicien — cliquez "Ajouter"</td></tr>';
+            body.innerHTML = '<tr><td colspan="4" class="empty-state small">Aucun technicien — cliquez "Ajouter"</td></tr>';
         }
     }, 200);
 }
@@ -887,6 +1540,46 @@ function removeTechRow(btn) {
 function updateTechCount() {
     const count = document.querySelectorAll('#techConfigBody tr[data-idx]').length;
     document.getElementById('techCount').textContent = `${count} technicien${count !== 1 ? 's' : ''}`;
+}
+
+function filterTechConfigTable() {
+    techConfigPage = 1;
+    applyTechConfigPagination();
+}
+
+function applyTechConfigPagination() {
+    const query = (document.getElementById('techConfigSearch')?.value || '').toLowerCase().trim();
+    const allRows = Array.from(document.querySelectorAll('#techConfigBody tr[data-idx]'));
+
+    // Filter
+    const matchedRows = allRows.filter(row => {
+        const nom = (row.querySelector('.tech-nom-input')?.value || '').toLowerCase();
+        const prenom = (row.querySelector('.tech-prenom-input')?.value || '').toLowerCase();
+        const num = (row.querySelector('.tech-num-input')?.value || '').toLowerCase();
+        return !query || nom.includes(query) || prenom.includes(query) || num.includes(query);
+    });
+
+    // Pagination
+    const totalPages = Math.ceil(matchedRows.length / TECH_CONFIG_PER_PAGE) || 1;
+    if (techConfigPage > totalPages) techConfigPage = totalPages;
+    const startIdx = (techConfigPage - 1) * TECH_CONFIG_PER_PAGE;
+    const endIdx = startIdx + TECH_CONFIG_PER_PAGE;
+
+    // Hide all, show only current page of matched rows
+    allRows.forEach(row => row.style.display = 'none');
+    matchedRows.forEach((row, i) => {
+        row.style.display = (i >= startIdx && i < endIdx) ? '' : 'none';
+    });
+
+    // Update count
+    const total = allRows.length;
+    if (query && matchedRows.length !== total) {
+        document.getElementById('techCount').textContent = `${matchedRows.length}/${total} technicien${total !== 1 ? 's' : ''}`;
+    } else {
+        document.getElementById('techCount').textContent = `${total} technicien${total !== 1 ? 's' : ''}`;
+    }
+
+    renderPagination('techConfigPagination', techConfigPage, totalPages, matchedRows.length, 'goTechConfigPage');
 }
 
 // ---- Upload ----
@@ -1026,6 +1719,10 @@ async function loadFilePanelList() {
     try {
         const resp = await fetch('/api/files');
         const files = await resp.json();
+        if (files.redirect) {
+            window.location.href = files.redirect;
+            return;
+        }
         filePanelData = files || [];
         countBadge.textContent = filePanelData.length;
         renderFilePanelList(filePanelData);
@@ -1044,7 +1741,10 @@ function renderFilePanelList(files) {
         <div class="file-panel-item ${f.active ? 'active' : ''}" onclick="selectFileFromPanel('${esc(f.name)}')">
             <div class="fp-icon">📊</div>
             <div class="fp-info">
-                <div class="fp-name">${esc(f.name)}</div>
+                <div class="fp-name">
+                    ${esc(f.display_name || f.name)}
+                    ${f.is_today ? '<span class="state-badge en-cours" style="margin-left:8px;padding:2px 6px;font-size:0.65rem;">Aujourd\'hui</span>' : ''}
+                </div>
                 <div class="fp-meta">${f.modified} · ${formatSize(f.size)}</div>
             </div>
             ${f.active ? '<span class="fp-check">✓</span>' : ''}
@@ -1054,25 +1754,12 @@ function renderFilePanelList(files) {
 
 function filterFileList(query) {
     const q = query.toLowerCase().trim();
-    const filtered = q ? filePanelData.filter(f => f.name.toLowerCase().includes(q)) : filePanelData;
-    renderFilePanelList(sortFiles(filtered, fileSortMode));
-}
-
-function sortFileList(mode, btn) {
-    fileSortMode = mode;
-    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const q = document.getElementById('filePanelSearch').value.toLowerCase().trim();
-    const filtered = q ? filePanelData.filter(f => f.name.toLowerCase().includes(q)) : filePanelData;
-    renderFilePanelList(sortFiles(filtered, mode));
-}
-
-function sortFiles(files, mode) {
-    const copy = [...files];
-    if (mode === 'name') copy.sort((a, b) => a.name.localeCompare(b.name));
-    else if (mode === 'date') copy.sort((a, b) => (b.modified || '').localeCompare(a.modified || ''));
-    else if (mode === 'size') copy.sort((a, b) => (b.size || 0) - (a.size || 0));
-    return copy;
+    // Allow searching by formatted date string (e.g. "avril") or YYYY-MM-DD
+    const filtered = q ? filePanelData.filter(f => 
+        (f.name && f.name.toLowerCase().includes(q)) || 
+        (f.display_name && f.display_name.toLowerCase().includes(q))
+    ) : filePanelData;
+    renderFilePanelList(filtered);
 }
 
 async function selectFileFromPanel(name) {
@@ -1210,35 +1897,40 @@ async function requestWAQR() {
 
 async function sendTestWA() {
     const cfg = await (await fetch('/api/config')).json();
-    const phone = cfg.MY_NUMBER;
+    const myNumber = cfg.MY_NUMBER;
 
-    if (!phone) {
-        showToast('Configurez votre numéro dans les paramètres', 'error');
+    if (!myNumber) {
+        showToast('Aucun Numéro principal configuré', 'error');
         return;
     }
+
+    showToast(`Envoi du test au numéro principal...`, 'info');
 
     try {
         const resp = await fetch('/api/whatsapp/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                to: phone.replace('+', ''),
-                message: '✅ Test Technosmart — la connexion WhatsApp fonctionne !'
+                to: myNumber.replace('+', ''),
+                message: cfg.MSG_TEST || '✅ Test Moca Consult — la connexion WhatsApp fonctionne !'
             })
         });
         const data = await resp.json();
         if (data.status === 'sent') {
-            showToast('Message test envoyé !', 'success');
+            showToast('✅ Test WhatsApp envoyé avec succès au numéro principal !', 'success');
         } else {
-            showToast(`Erreur: ${data.error || 'inconnu'}`, 'error');
+            showToast(`Échec WhatsApp: ${data.error}`, 'error');
+            console.warn(`Échec de l'envoi WhatsApp: ${data.error}`);
         }
     } catch (err) {
-        showToast('Erreur d\'envoi', 'error');
+        showToast('Erreur serveur lors de l\'envoi du test', 'error');
+        console.error('Erreur WhatsApp:', err);
     }
 }
 
 async function logoutWA() {
-    if (!confirm('Voulez-vous vraiment déconnecter WhatsApp ?')) return;
+    const ok = await showConfirm("WhatsApp", "Voulez-vous vraiment déconnecter WhatsApp ?");
+    if (!ok) return;
 
     try {
         await fetch('/api/whatsapp/logout', { method: 'POST' });
@@ -1249,3 +1941,605 @@ async function logoutWA() {
     }
 }
 
+// ---- Generic Settings Change Tracking ----
+let _numSnapshot = "";
+let _genSnapshot = {};
+let _msgSnapshot = {};
+
+function snapshotNumValues() {
+    const el = document.getElementById('settingsMyNumber');
+    if (el) _numSnapshot = el.value;
+}
+function hasNumChanged() {
+    const el = document.getElementById('settingsMyNumber');
+    return el ? el.value !== _numSnapshot : false;
+}
+function checkNumChanges() {
+    const btn = document.getElementById('saveNumBtn');
+    if (!btn) return;
+    if (hasNumChanged()) {
+        btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+    } else {
+        btn.disabled = true; btn.style.opacity = '0.45'; btn.style.cursor = 'not-allowed';
+    }
+}
+
+function snapshotGenValues() {
+    _genSnapshot = {
+        morning: document.getElementById('settingsMorningTime')?.value,
+        interval: document.getElementById('settingsInterval')?.value,
+        eod: document.getElementById('settingsEODTime')?.value,
+        wa: document.getElementById('settingsWhatsApp')?.checked
+    };
+}
+function hasGenChanged() {
+    return _genSnapshot.morning !== document.getElementById('settingsMorningTime')?.value ||
+           _genSnapshot.interval !== document.getElementById('settingsInterval')?.value ||
+           _genSnapshot.eod !== document.getElementById('settingsEODTime')?.value ||
+           _genSnapshot.wa !== document.getElementById('settingsWhatsApp')?.checked;
+}
+function checkGenChanges() {
+    const btn = document.getElementById('saveGenBtn');
+    if (!btn) return;
+    if (hasGenChanged()) {
+        btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+    } else {
+        btn.disabled = true; btn.style.opacity = '0.45'; btn.style.cursor = 'not-allowed';
+    }
+}
+
+function snapshotMsgValues() {
+    _msgSnapshot = {
+        test: document.getElementById('settingsMsgTest')?.value,
+        morning: document.getElementById('settingsMsgMorning')?.value,
+        eod: document.getElementById('settingsMsgEODThanks')?.value
+    };
+}
+function hasMsgChanged() {
+    return _msgSnapshot.test !== document.getElementById('settingsMsgTest')?.value ||
+           _msgSnapshot.morning !== document.getElementById('settingsMsgMorning')?.value ||
+           _msgSnapshot.eod !== document.getElementById('settingsMsgEODThanks')?.value;
+}
+function checkMsgChanges() {
+    const btn = document.getElementById('saveMsgBtn');
+    if (!btn) return;
+    if (hasMsgChanged()) {
+        btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+    } else {
+        btn.disabled = true; btn.style.opacity = '0.45'; btn.style.cursor = 'not-allowed';
+    }
+}
+
+let _trackingInitGeneral = false;
+function initChangeTracking() {
+    if (_trackingInitGeneral) return;
+    _trackingInitGeneral = true;
+
+    const numInput = document.getElementById('settingsMyNumber');
+    if (numInput) numInput.addEventListener('input', checkNumChanges);
+    
+    ['settingsMorningTime', 'settingsInterval', 'settingsEODTime'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', checkGenChanges);
+    });
+    const wa = document.getElementById('settingsWhatsApp');
+    if (wa) wa.addEventListener('change', checkGenChanges);
+    
+    ['settingsMsgTest', 'settingsMsgMorning', 'settingsMsgEODThanks'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', checkMsgChanges);
+    });
+}
+
+function snapshotAllValues() {
+    snapshotNumValues();
+    snapshotGenValues();
+    snapshotMsgValues();
+    checkNumChanges();
+    checkGenChanges();
+    checkMsgChanges();
+}
+
+// ---- Auth / Logout ----
+
+async function handleAppLogout() {
+    try {
+        const btn = document.getElementById('logoutBtn');
+        if (btn) btn.style.opacity = '0.5';
+        await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) { console.error('Logout error:', e); }
+    window.location.href = '/login';
+}
+
+// Ensure the logout button is bound securely
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('logoutBtn');
+    if (btn) {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleAppLogout();
+        });
+    }
+});
+
+// Intercept 401 responses globally to redirect to login
+const _origFetch = window.fetch;
+window.fetch = async function(...args) {
+    const resp = await _origFetch.apply(this, args);
+    if (resp.status === 401 && !args[0]?.toString().includes('/api/auth/')) {
+        window.location.href = '/login';
+    }
+    return resp;
+};
+
+// ---- SMTP ----
+
+async function testSMTP() {
+    const btn = document.getElementById('smtpTestBtn');
+    const emailInput = document.getElementById('smtpTestEmail');
+    const targetEmail = emailInput ? emailInput.value.trim() : '';
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Envoi...';
+    try {
+        // Save first to update SMTP config (quietly)
+        await saveSettings(true);
+        const resp = await fetch('/api/smtp/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: targetEmail })
+        });
+        const data = await resp.json();
+        if (data.error) {
+            showToast('❌ SMTP: ' + data.error, 'error');
+        } else {
+            showToast('✅ ' + data.message, 'success');
+        }
+    } catch (err) {
+        showToast('❌ Erreur SMTP', 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Envoyer le test';
+}
+
+// ---- Zitadel SMTP Management ----
+
+async function loadZitadelSMTPStatus() {
+    try {
+        const resp = await fetch('/api/smtp/zitadel');
+        const data = await resp.json();
+
+        if (data.error) {
+            // Zitadel not reachable — keep badge as-is, fields come from local config
+            snapshotSMTPValues();
+            initSMTPChangeTracking();
+            return;
+        }
+
+        const configs = data.result || [];
+        if (configs.length === 0) {
+            // No Zitadel SMTP config — fields stay from local config
+            snapshotSMTPValues();
+            initSMTPChangeTracking();
+            return;
+        }
+
+        const active = configs.find(c => c.state === 'SMTP_CONFIG_ACTIVE');
+        const config = active || configs[0];
+
+        // Populate form fields from Zitadel's config
+        const hostParts = (config.host || '').split(':');
+        document.getElementById('settingsSMTPHost').value = hostParts[0] || '';
+        document.getElementById('settingsSMTPPort').value = hostParts[1] || '587';
+        document.getElementById('settingsSMTPUsername').value = config.user || '';
+        document.getElementById('settingsSMTPFrom').value = config.senderAddress || '';
+        document.getElementById('settingsSMTPSenderName').value = config.senderName || 'Fiber Tracker';
+        document.getElementById('settingsSMTPTLS').checked = config.tls !== false;
+        // Don't populate password — Zitadel never returns it
+
+    } catch (e) {
+        // Silent — fields stay from local config
+    }
+
+    // Snapshot SMTP values for change tracking
+    snapshotSMTPValues();
+    initSMTPChangeTracking();
+}
+
+async function syncSMTPToZitadel() {
+    const btn = document.getElementById('saveSMTPBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Synchronisation...';
+
+    try {
+        const host = document.getElementById('settingsSMTPHost').value.trim();
+        const port = parseInt(document.getElementById('settingsSMTPPort').value) || 587;
+        const user = document.getElementById('settingsSMTPUsername').value.trim();
+        const password = document.getElementById('settingsSMTPPassword').value.trim();
+        const from = document.getElementById('settingsSMTPFrom').value.trim();
+        const senderName = document.getElementById('settingsSMTPSenderName').value.trim() || 'Fiber Tracker';
+        const tls = document.getElementById('settingsSMTPTLS').checked;
+
+        if (!host || !from) {
+            showToast('❌ Serveur SMTP et adresse d\'envoi requis', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Sauvegarder SMTP';
+            return;
+        }
+
+        // Also save to local config (for backward compatibility)
+        await saveSettings(true);
+
+        // Sync to Zitadel
+        const resp = await fetch('/api/smtp/zitadel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                host: host,
+                port: port,
+                user: user,
+                password: password,
+                senderAddress: from,
+                senderName: senderName,
+                tls: tls
+            })
+        });
+        const data = await resp.json();
+
+        if (data.error) {
+            showToast('❌ Système SMTP : ' + data.error, 'error');
+        } else {
+            showToast('✅ ' + data.message, 'success');
+            // Refresh status badge
+            await loadZitadelSMTPStatus();
+        }
+    } catch (err) {
+        showToast('❌ Erreur de synchronisation SMTP', 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Sauvegarder SMTP';
+
+    // Re-snapshot and disable save button (no pending changes)
+    snapshotSMTPValues();
+    disableSaveSMTP();
+}
+
+// ---- SMTP Change Tracking ----
+
+let _smtpSnapshot = {};
+let _smtpTrackingInit = false;
+
+const SMTP_FIELD_IDS = [
+    'settingsSMTPHost', 'settingsSMTPPort', 'settingsSMTPUsername',
+    'settingsSMTPPassword', 'settingsSMTPFrom', 'settingsSMTPSenderName'
+];
+
+function snapshotSMTPValues() {
+    _smtpSnapshot = {};
+    SMTP_FIELD_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) _smtpSnapshot[id] = el.value;
+    });
+    const tls = document.getElementById('settingsSMTPTLS');
+    if (tls) _smtpSnapshot['settingsSMTPTLS'] = tls.checked;
+}
+
+function hasSMTPChanged() {
+    for (const id of SMTP_FIELD_IDS) {
+        const el = document.getElementById(id);
+        if (el && el.value !== (_smtpSnapshot[id] || '')) return true;
+    }
+    const tls = document.getElementById('settingsSMTPTLS');
+    if (tls && tls.checked !== _smtpSnapshot['settingsSMTPTLS']) return true;
+    return false;
+}
+
+function enableSaveSMTP() {
+    const btn = document.getElementById('saveSMTPBtn');
+    if (btn && btn.disabled) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    }
+}
+
+function disableSaveSMTP() {
+    const btn = document.getElementById('saveSMTPBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.45';
+        btn.style.cursor = 'not-allowed';
+    }
+}
+
+function checkSMTPChanges() {
+    if (hasSMTPChanged()) {
+        enableSaveSMTP();
+    } else {
+        disableSaveSMTP();
+    }
+}
+
+function initSMTPChangeTracking() {
+    if (_smtpTrackingInit) return;
+    _smtpTrackingInit = true;
+
+    SMTP_FIELD_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', checkSMTPChanges);
+    });
+    const tls = document.getElementById('settingsSMTPTLS');
+    if (tls) tls.addEventListener('change', checkSMTPChanges);
+}
+
+async function testZitadelSMTP() {
+    const btn = document.getElementById('smtpTestBtn');
+    const email = document.getElementById('smtpTestEmail').value.trim();
+
+    if (!email) {
+        showToast('❌ Entrez une adresse email destinataire', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Envoi...';
+
+    try {
+        const resp = await fetch('/api/smtp/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        });
+        const data = await resp.json();
+
+        if (data.error) {
+            showToast('❌ ' + data.error, 'error');
+        } else {
+            showToast('✅ ' + data.message, 'success');
+        }
+    } catch (err) {
+        showToast('❌ Erreur de test SMTP', 'error');
+    }
+
+    btn.disabled = false;
+    btn.textContent = '📨 Envoyer le test';
+}
+
+// ---- Google Drive ----
+
+async function loadDriveStatus() {
+    try {
+        const resp = await fetch('/api/drive/status');
+        const data = await resp.json();
+        const badge = document.getElementById('driveStatusBadge');
+        const notConn = document.getElementById('driveNotConnected');
+        const conn = document.getElementById('driveConnected');
+
+        if (data.configured) {
+            badge.textContent = 'Connecté';
+            badge.className = 'wa-status connected';
+            notConn.style.display = 'none';
+            conn.style.display = 'block';
+
+            const folderDisplay = document.getElementById('driveFolderDisplay');
+            if (folderDisplay) folderDisplay.textContent = '📂 ' + (data.folder_name || data.folder_id);
+        } else {
+            badge.textContent = 'Non configuré';
+            badge.className = 'wa-status';
+            notConn.style.display = 'block';
+            conn.style.display = 'none';
+        }
+    } catch (e) {
+        console.error('Drive status error:', e);
+    }
+}
+
+async function setDriveLink() {
+    const input = document.getElementById('driveLinkInput');
+    const link = input?.value.trim();
+    if (!link) {
+        showToast('❌ Collez un lien de dossier Google Drive', 'error');
+        return;
+    }
+
+    showToast('⏳ Vérification...', 'info');
+
+    try {
+        const resp = await fetch('/api/drive/set-folder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ link: link })
+        });
+        const data = await resp.json();
+        if (data.error) {
+            showToast('❌ ' + data.error, 'error');
+        } else {
+            showToast('✅ Google Drive connecté !', 'success');
+            loadDriveStatus();
+        }
+    } catch (err) {
+        showToast('❌ Erreur de connexion', 'error');
+    }
+}
+
+async function disconnectGDrive() {
+    const ok = await showConfirm("Google Drive", "Déconnecter Google Drive ?");
+    if (!ok) return;
+    try {
+        await fetch('/api/drive/disconnect', { method: 'POST' });
+        showToast('Google Drive déconnecté', 'info');
+        loadDriveStatus();
+    } catch (err) {
+        showToast('Erreur de déconnexion', 'error');
+    }
+}
+
+async function syncDriveNow() {
+    showToast('🔄 Synchronisation en cours...', 'info');
+    try {
+        const resp = await fetch('/api/drive/sync', { method: 'POST' });
+        const data = await resp.json();
+        if (data.error) {
+            showToast('❌ ' + data.error, 'error');
+        } else {
+            showToast(`✅ ${data.downloaded} fichier(s) téléchargé(s)`, 'success');
+            if (data.downloaded > 0) refreshData();
+        }
+} catch (err) {
+        showToast('❌ Erreur de synchronisation', 'error');
+    }
+}
+
+function toggleNumberLock(btn) {
+    const input = document.getElementById('settingsMyNumber');
+    if (input.readOnly) {
+        input.readOnly = false;
+        input.style.backgroundColor = 'var(--bg-primary)';
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+        </svg>`;
+        btn.title = "Verrouiller";
+        input.focus();
+    } else {
+        input.readOnly = true;
+        input.style.backgroundColor = 'var(--bg-tertiary)';
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="lock-icon">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>`;
+        btn.title = "Modifier (déverrouiller)";
+        saveSettings(false); // Automatically trigger save when locking
+    }
+}
+
+// ---- FluxUI Inspired Custom Time Pickers ----
+function initFluxTimePickers() {
+    const inputs = document.querySelectorAll('input[type="time"]');
+    inputs.forEach(input => {
+        if (input.dataset.fluxInitialized) return;
+        input.dataset.fluxInitialized = "true";
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flux-tp-wrapper';
+        input.parentNode.insertBefore(wrapper, input);
+
+        input.style.display = 'none';
+        wrapper.appendChild(input);
+
+        let optionsHtml = '<div class="flux-tp-columns">';
+        const isOptInterval = input.id === 'settingsInterval';
+        const startHour = isOptInterval ? 1 : 0;
+        const endHour = isOptInterval ? 12 : 23;
+
+        optionsHtml += '<div class="flux-tp-col flux-tp-hours">';
+        for (let h = startHour; h <= endHour; h++) {
+            const hh = String(h).padStart(2, '0');
+            optionsHtml += `<div class="flux-tp-item hour-item" data-h="${hh}">${hh}</div>`;
+        }
+        optionsHtml += '</div>';
+
+        optionsHtml += '<div class="flux-tp-col flux-tp-minutes">';
+        for (let m = 0; m < 60; m++) {
+            const mm = String(m).padStart(2, '0');
+            optionsHtml += `<div class="flux-tp-item minute-item" data-m="${mm}">${mm}</div>`;
+        }
+        optionsHtml += '</div></div>';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'flux-tp-btn';
+        btn.innerHTML = `
+            <span class="flux-tp-val">${input.value || '--:--'}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flux-tp-icon">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        `;
+        wrapper.appendChild(btn);
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'flux-tp-dropdown flux-tp-dual';
+        dropdown.innerHTML = optionsHtml;
+        wrapper.appendChild(dropdown);
+
+        let currentH = input.value ? input.value.split(':')[0] : (isOptInterval ? '02' : '08');
+        let currentM = input.value ? input.value.split(':')[1] : '00';
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dropdown.classList.contains('show');
+            document.querySelectorAll('.flux-tp-dropdown').forEach(d => { d.classList.remove('show', 'visible'); });
+            document.querySelectorAll('.flux-tp-btn').forEach(b => { b.classList.remove('open'); });
+
+            if (!isOpen) {
+                btn.classList.add('open');
+                dropdown.classList.add('show');
+                
+                if (input.value) {
+                    currentH = input.value.split(':')[0];
+                    currentM = input.value.split(':')[1];
+                }
+                
+                dropdown.querySelectorAll('.hour-item').forEach(el => {
+                    el.classList.toggle('selected', el.dataset.h === currentH);
+                });
+                dropdown.querySelectorAll('.minute-item').forEach(el => {
+                    el.classList.toggle('selected', el.dataset.m === currentM);
+                });
+
+                setTimeout(() => dropdown.classList.add('visible'), 10);
+                
+                const selH = dropdown.querySelector('.hour-item.selected');
+                const selM = dropdown.querySelector('.minute-item.selected');
+                const colH = dropdown.querySelector('.flux-tp-hours');
+                const colM = dropdown.querySelector('.flux-tp-minutes');
+                if (selH) colH.scrollTop = selH.offsetTop - colH.clientHeight / 2 + selH.clientHeight / 2;
+                if (selM) colM.scrollTop = selM.offsetTop - colM.clientHeight / 2 + selM.clientHeight / 2;
+            }
+        });
+
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+
+        dropdown.querySelectorAll('.hour-item').forEach(opt => {
+            opt.addEventListener('click', () => {
+                currentH = opt.dataset.h;
+                dropdown.querySelectorAll('.hour-item').forEach(el => el.classList.remove('selected'));
+                opt.classList.add('selected');
+                updateTime();
+            });
+        });
+
+        dropdown.querySelectorAll('.minute-item').forEach(opt => {
+            opt.addEventListener('click', () => {
+                currentM = opt.dataset.m;
+                dropdown.querySelectorAll('.minute-item').forEach(el => el.classList.remove('selected'));
+                opt.classList.add('selected');
+                updateTime();
+            });
+        });
+
+        function updateTime() {
+            const timeStr = `${currentH}:${currentM}`;
+            input.value = timeStr;
+            btn.querySelector('.flux-tp-val').textContent = timeStr;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    });
+
+    // Close on click outside
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.flux-tp-dropdown').forEach(d => d.classList.remove('show', 'visible'));
+        document.querySelectorAll('.flux-tp-btn').forEach(b => b.classList.remove('open'));
+    });
+}
+
+window.syncFluxTimePickers = function() {
+    document.querySelectorAll('input[type="time"]').forEach(input => {
+        const wrapper = input.closest('.flux-tp-wrapper');
+        if (wrapper) {
+            wrapper.querySelector('.flux-tp-val').textContent = input.value ? input.value.substring(0,5) : '--:--';
+        }
+    });
+}

@@ -37,9 +37,23 @@ func Parse(filePath string) (*models.DailyStats, error) {
 	// Parse "Tableau récap" for detailed records
 	parseRecapSheet(f, stats)
 
-	// Fallback: if GANTT sheet was missing, compute totals from AllRecords
-	if stats.Total == 0 && len(stats.AllRecords) > 0 {
+	// ALWAYS compute true stats from AllRecords if available, as Tableau Recap contains accurate OK/NOK states
+	// whereas GANTT text parsing is flawed (e.g., "En cours RACC" means NOK but text parsing sees 0/0).
+	if len(stats.AllRecords) > 0 {
 		computeSummaryFromRecords(stats)
+		
+		// Infer true date from RDVDate of the first valid record
+		rdv := stats.AllRecords[0].RDVDate
+		if len(rdv) >= 10 {
+			if strings.Contains(rdv, "/") {
+				parts := strings.SplitN(rdv[:10], "/", 3)
+				if len(parts) == 3 {
+					stats.Date = fmt.Sprintf("%s-%s-%s", parts[2], parts[1], parts[0]) // YYYY-MM-DD
+				}
+			} else if strings.Contains(rdv, "-") {
+				stats.Date = rdv[:10]
+			}
+		}
 	}
 
 	return stats, nil
@@ -438,10 +452,34 @@ func cleanDuration(s string) string {
 	return s
 }
 
-// computeSummaryFromRecords builds TotalOK/TotalNOK/ByTechnician from AllRecords
-// when no GANTT sheet is available.
+// computeSummaryFromRecords builds TotalOK/TotalNOK/ByTechnician from AllRecords.
+// It overwrites any global totals and tech OK/NOK counts to ensure full accuracy 
+// from the detailed Tableau Recap sheet.
 func computeSummaryFromRecords(stats *models.DailyStats) {
+	// Reset global totals since we're recomputing from pristine records
+	stats.TotalOK = 0
+	stats.TotalNOK = 0
+	stats.Total = 0
+	stats.RACC_OK = 0
+	stats.RACC_NOK = 0
+	stats.SAV_OK = 0
+	stats.SAV_NOK = 0
+
+	// Build a fast lookup for existing TechStats
 	techMap := map[string]*models.TechStats{}
+	for i := range stats.ByTechnician {
+		t := &stats.ByTechnician[i]
+		// Reset inner counts
+		t.OK = 0
+		t.NOK = 0
+		t.Total = 0
+		t.RACC_OK = 0
+		t.RACC_NOK = 0
+		t.SAV_OK = 0
+		t.SAV_NOK = 0
+		t.RateOK = 0
+		techMap[strings.TrimSpace(t.Name)] = t
+	}
 
 	for _, r := range stats.AllRecords {
 		upper := strings.ToUpper(r.State)
@@ -474,12 +512,20 @@ func computeSummaryFromRecords(stats *models.DailyStats) {
 		}
 
 		// By technician
-		if r.Tech != "" {
-			ts, ok := techMap[r.Tech]
+		techName := strings.TrimSpace(r.Tech)
+		if techName != "" {
+			ts, ok := techMap[techName]
 			if !ok {
-				ts = &models.TechStats{Name: r.Tech}
-				techMap[r.Tech] = ts
+				// If not found in GANTT, create a new entry
+				ts = &models.TechStats{Name: techName}
+				techMap[techName] = ts
+				// We need to append to ByTechnician array later, so let's mark it
+				stats.ByTechnician = append(stats.ByTechnician, *ts)
+				// Re-point the map to the real address in the array
+				ts = &stats.ByTechnician[len(stats.ByTechnician)-1]
+				techMap[techName] = ts
 			}
+			
 			if isOK {
 				ts.OK++
 				if typeUpper == "RACC" {
@@ -500,7 +546,7 @@ func computeSummaryFromRecords(stats *models.DailyStats) {
 		}
 	}
 
-	// Compute rates
+	// Compute rates globally
 	if stats.Total > 0 {
 		stats.RateOK = float64(stats.TotalOK) / float64(stats.Total)
 	}
@@ -511,13 +557,11 @@ func computeSummaryFromRecords(stats *models.DailyStats) {
 		stats.SAV_Rate = float64(stats.SAV_OK) / float64(sav)
 	}
 
-	// Build ByTechnician slice
-	if len(stats.ByTechnician) == 0 {
-		for _, ts := range techMap {
-			if ts.Total > 0 {
-				ts.RateOK = float64(ts.OK) / float64(ts.Total)
-			}
-			stats.ByTechnician = append(stats.ByTechnician, *ts)
+	// Compute rates for technicians
+	for i := range stats.ByTechnician {
+		ts := &stats.ByTechnician[i]
+		if ts.Total > 0 {
+			ts.RateOK = float64(ts.OK) / float64(ts.Total)
 		}
 	}
 }

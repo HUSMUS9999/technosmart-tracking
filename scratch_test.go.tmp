@@ -1,0 +1,45 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"bytes"
+
+	"fiber-tracker/internal/config"
+	"fiber-tracker/internal/excel"
+)
+
+func main() {
+	config.Load("config.json")
+	stats, err := excel.Parse("/home/hus/Downloads/GANTT Moka.xlsx")
+	if err != nil {
+		fmt.Println("Error parsing:", err)
+		return
+	}
+
+	msg := formatEODReport(stats)
+
+	payload := map[string]string{
+		"to":      "+33764474619",
+		"message": msg,
+	}
+	body, _ := json.Marshal(payload)
+
+	req, _ := http.NewRequest("POST", "http://127.0.0.1:9510/api/whatsapp/send", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", "ft_session=supersession")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("Error sending:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 200 {
+		fmt.Println("SUCCESS")
+	} else {
+		fmt.Println("HTTP", resp.StatusCode)
+	}
+}
